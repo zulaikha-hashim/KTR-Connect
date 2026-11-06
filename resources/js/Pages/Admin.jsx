@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../Components/AppLayout';
 
@@ -62,87 +63,87 @@ const adminNavigation = [
   },
 ];
 
-const adminRoles = [
-  { label: 'Student: M. Afiq' },
-  { label: 'Felo: Dr. Kamil' },
-  { label: 'Admin: En. Razak', active: true },
-];
-
 const adminProfile = {
   name: 'En. Razak',
   description: 'Collegiate Administrator',
 };
 
-const initialApplications = [
-  {
-    id: 'ACT-2026-088',
-    title: 'Inter-Block Esports & Cultural Night 2026',
-    description:
-      'Residential block competition uniting blocks TR-A through TR-F with cultural showcases, an MLBB tournament, and communal fellowship banquet.',
-    submitted: '18 Feb 2026',
-    dates: '14 – 15 Mar 2026',
-    turnout: 300,
-    redMerit: '2 Red (Comm)',
-    blueMerit: '1 Blue (Part)',
-    submitter: 'Dr. Ahmad Kamil',
-    role: 'Senior Residential Fellow',
-    phone: '+60 19-712 4490',
-    status: 'pending',
-    icon: 'stadia_controller',
-  },
-  {
-    id: 'ACT-2026-094',
-    title: 'Inter-Block Futsal Championship',
-    description:
-      'A two-day inter-block tournament to promote teamwork and active living among residential college students.',
-    submitted: '20 Feb 2026',
-    dates: '25 – 27 Nov 2026',
-    turnout: 180,
-    redMerit: '2 Red (Comm)',
-    blueMerit: '1 Blue (Player)',
-    submitter: 'Dr. Farah Nadia',
-    role: 'Residential Fellow',
-    phone: '+60 12-882 1044',
-    status: 'pending',
-    icon: 'sports_soccer',
-  },
-  {
-    id: 'ACT-2026-102',
-    title: 'Block TR-D Annual Iftar & Community Outreach',
-    description:
-      'A community iftar bringing residents together with a meal service and outreach activities for the local community.',
-    submitted: '22 Feb 2026',
-    dates: '28 Mar 2026',
-    turnout: 240,
-    redMerit: '2 Red (Exco)',
-    blueMerit: '1 Blue (Audience)',
-    submitter: 'Ustaz Zulkifli',
-    role: 'Residential Fellow',
-    phone: '+60 13-440 8862',
-    status: 'pending',
-    icon: 'diversity_3',
-  },
-];
+const organizationNames = {
+  jkm_sports: 'JKM Biro Sukan & Rekreasi',
+  jkm_academic: 'JKM Biro Akademik & Kerjaya',
+  jkm_cultural: 'JKM Biro Kebudayaan & Kesenian',
+  jkm_welfare: 'JKM Biro Kebajikan & Kerohanian',
+  felo_office: 'Pejabat Felo Kolej Tun Razak',
+};
+
+const meritTierNames = {
+  standard: 'Standard Tier',
+  high_impact: 'High Impact Collegiate',
+  trainer_special: 'Technical Facilitator Role',
+};
+
+function formatDate(value, options = { dateStyle: 'medium' }) {
+  if (!value) return 'Not provided';
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Not provided'
+    : new Intl.DateTimeFormat(undefined, options).format(date);
+}
+
+function toReviewApplication(application) {
+  const year = application.created_at
+    ? new Date(application.created_at).getFullYear()
+    : new Date().getFullYear();
+
+  return {
+    ...application,
+    reference: `ACT-${year}-${String(application.id).padStart(3, '0')}`,
+    title: application.activity_name || 'Untitled draft',
+    description: application.merit_notes || 'No additional merit notes were provided.',
+    submitted: formatDate(application.created_at),
+    dates: `${formatDate(application.start_at, { dateStyle: 'medium', timeStyle: 'short' })} – ${formatDate(application.end_at, { dateStyle: 'medium', timeStyle: 'short' })}`,
+    turnout: application.expected_turnout,
+    committeeQuota: application.committee_quota,
+    participantQuota: application.participant_quota,
+    meritTier: meritTierNames[application.merit_tier] || 'Not specified',
+    submitter: organizationNames[application.organization] || 'Organization not specified',
+    role: 'Proposing organization',
+  };
+}
 
 function Icon({ children, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
 }
 
-export default function Admin() {
-  const [applications, setApplications] = useState(initialApplications);
-  const [selectedId, setSelectedId] = useState(initialApplications[0].id);
+export default function Admin({ applications: submittedApplications = [] }) {
+  const applications = useMemo(
+    () => submittedApplications.map(toReviewApplication),
+    [submittedApplications],
+  );
+  const [selectedId, setSelectedId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('pending');
   const [search, setSearch] = useState('');
+  const [detailsId, setDetailsId] = useState(null);
+  const [documentId, setDocumentId] = useState(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState(null);
-  const [page, setPage] = useState(1);
-  const [zoom, setZoom] = useState(100);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   const selectedApplication = applications.find(({ id }) => id === selectedId);
+  const detailsApplication = applications.find(({ id }) => id === detailsId);
+  const documentApplication = applications.find(({ id }) => id === documentId);
   const pendingCount = applications.filter(({ status }) => status === 'pending').length;
   const approvedCount = applications.filter(({ status }) => status === 'approved').length;
   const rejectedCount = applications.filter(({ status }) => status === 'rejected').length;
+
+  useEffect(() => {
+    if (!applications.some(({ id }) => id === selectedId)) {
+      setSelectedId(applications.find(({ status }) => status === 'pending')?.id ?? applications[0]?.id ?? null);
+    }
+  }, [applications, selectedId]);
 
   const visibleApplications = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -150,11 +151,11 @@ export default function Admin() {
     return applications.filter((application) => {
       const matchesStatus =
         activeFilter === 'all' ||
-        (activeFilter === 'pending' && application.status === 'pending') ||
-        (activeFilter === 'high-turnout' && application.turnout > 200);
+        application.status === activeFilter ||
+        (activeFilter === 'high-turnout' && application.expected_turnout > 200);
       const matchesSearch =
         !query ||
-        `${application.id} ${application.title} ${application.submitter}`
+        `${application.reference} ${application.title} ${application.submitter}`
           .toLowerCase()
           .includes(query);
 
@@ -163,11 +164,12 @@ export default function Admin() {
   }, [activeFilter, applications, search]);
 
   useEffect(() => {
-    document.body.style.overflow = isRejectModalOpen ? 'hidden' : '';
+    const isModalOpen = isRejectModalOpen || detailsApplication || documentApplication;
+    document.body.style.overflow = isModalOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isRejectModalOpen]);
+  }, [isRejectModalOpen, detailsApplication, documentApplication]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -177,32 +179,47 @@ export default function Admin() {
   }, [toast]);
 
   useEffect(() => {
-    if (!isRejectModalOpen) return undefined;
+    if (!isRejectModalOpen && !detailsApplication && !documentApplication) return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setIsRejectModalOpen(false);
+      if (event.key === 'Escape') {
+        setIsRejectModalOpen(false);
+        setDetailsId(null);
+        setDocumentId(null);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRejectModalOpen]);
+  }, [isRejectModalOpen, detailsApplication, documentApplication]);
 
-  const updateApplicationStatus = (status) => {
+  const updateApplicationStatus = (status, reviewNotes = '') => {
     if (!selectedApplication) return;
 
-    setApplications((current) =>
-      current.map((application) =>
-        application.id === selectedApplication.id ? { ...application, status } : application,
-      ),
-    );
-    setActiveFilter('all');
-    setToast({
+    setReviewError('');
+    router.patch(`/admin/activity-applications/${selectedApplication.id}`, {
       status,
-      title: `Application ${selectedApplication.id} ${status}`,
-      message:
-        status === 'approved'
-          ? 'The proposal has been approved and the submitter has been notified.'
-          : `The proposal decision and your remarks have been recorded for ${selectedApplication.submitter}.`,
+      review_notes: reviewNotes,
+    }, {
+      preserveScroll: true,
+      onStart: () => setIsUpdating(true),
+      onSuccess: () => {
+        setActiveFilter('all');
+        setIsRejectModalOpen(false);
+        setDetailsId(null);
+        setRejectionReason('');
+        setToast({
+          status,
+          title: `Application ${selectedApplication.reference} ${status}`,
+          message: status === 'approved'
+            ? 'The approval has been saved.'
+            : 'The rejection and review notes have been saved.',
+        });
+      },
+      onError: (errors) => {
+        setReviewError(errors.review_notes || 'The application could not be updated. Refresh and try again.');
+      },
+      onFinish: () => setIsUpdating(false),
     });
   };
 
@@ -210,15 +227,12 @@ export default function Admin() {
     event.preventDefault();
     if (rejectionReason.trim().length < 20 || rejectionReason.trim().length > 400) return;
 
-    updateApplicationStatus('rejected');
-    setIsRejectModalOpen(false);
-    setRejectionReason('');
+    updateApplicationStatus('rejected', rejectionReason.trim());
   };
 
   return (
     <AppLayout
       navigationSections={adminNavigation}
-      roles={adminRoles}
       profile={adminProfile}
       sessionLabel="Academic Session: Sem 1, 2026/2027"
     >
@@ -267,7 +281,7 @@ export default function Admin() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-on-surface shadow-sm">
               <span className="font-label-md text-label-md text-secondary">Total Proposals</span>
-              <span className="font-headline-sm text-headline-sm font-bold">48</span>
+              <span className="font-headline-sm text-headline-sm font-bold">{applications.length}</span>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-amber-900 shadow-sm">
               <span className="h-2 w-2 animate-pulse rounded-full bg-amber-600" />
@@ -278,491 +292,366 @@ export default function Admin() {
               <span className="h-2 w-2 rounded-full bg-tertiary-container" />
               <span className="font-label-md text-label-md text-secondary">Approved</span>
               <span className="font-headline-sm text-headline-sm font-bold text-tertiary-container">
-                {41 + approvedCount}
+                {approvedCount}
               </span>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-surface-container-lowest px-3 py-1.5 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-error" />
               <span className="font-label-md text-label-md text-secondary">Rejected</span>
               <span className="font-headline-sm text-headline-sm font-bold text-error">
-                {4 + rejectedCount}
+                {rejectedCount}
               </span>
             </div>
           </div>
         </section>
 
-        <div className="grid items-start gap-space-md pt-space-md lg:grid-cols-[minmax(300px,0.62fr)_minmax(0,1fr)]">
-          <aside className="flex min-w-0 flex-col gap-space-md">
-            <section className="space-y-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-headline-sm text-headline-sm text-on-surface">
-                  Queue &amp; Submissions
+        <div className="flex flex-col gap-space-md pt-space-md">
+          {selectedApplication && (
+            <section className="flex flex-col justify-between gap-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-sm sm:flex-row sm:items-center">
+              <div className="min-w-0">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="font-label-sm text-label-sm font-bold uppercase text-secondary">
+                    Document review workspace
+                  </span>
+                  <span className="rounded bg-surface-container px-2 py-0.5 font-code text-code">
+                    {selectedApplication.has_proposal_document ? 'Uploaded proposal' : 'Application details'}
+                  </span>
+                </div>
+                <h2 className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">
+                  {selectedApplication.title}
                 </h2>
-                <span className="font-label-sm text-label-sm font-semibold uppercase text-secondary">
-                  {pendingCount} actions needed
-                </span>
               </div>
-              <label className="relative block">
-                <Icon className="absolute left-3 top-2.5 text-[20px] text-secondary">search</Icon>
-                <input
-                  className="w-full rounded-lg bg-surface-container-low py-2 pl-10 pr-3 font-body-md text-body-md text-on-surface placeholder:text-secondary/70 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search ID, title, or fellow..."
-                  type="search"
-                  value={search}
-                />
-              </label>
-              <div aria-label="Filter applications" className="flex gap-1.5 overflow-x-auto pb-1">
+              {selectedApplication.status === 'pending' ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-2 font-label-md text-label-md text-error shadow-sm ring-1 ring-error/30 transition-colors hover:bg-error-container disabled:opacity-50"
+                    onClick={() => {
+                      setReviewError('');
+                      setIsRejectModalOpen(true);
+                    }}
+                    disabled={isUpdating}
+                    type="button"
+                  >
+                    <Icon className="text-[18px]">close</Icon>
+                    Reject
+                  </button>
+                  <button
+                    className="flex items-center gap-2 rounded-lg bg-tertiary-container px-4 py-2 font-label-md text-label-md text-on-tertiary shadow-md transition-all hover:bg-tertiary hover:shadow-lg active:scale-[0.98] disabled:opacity-50"
+                    onClick={() => updateApplicationStatus('approved')}
+                    disabled={isUpdating}
+                    type="button"
+                  >
+                    <Icon className="text-[20px]">task_alt</Icon>
+                    Approve application
+                  </button>
+                </div>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-3 py-1.5 font-label-md text-label-md font-semibold capitalize text-secondary">
+                  <Icon className="text-[18px]">
+                    {selectedApplication.status === 'approved' ? 'verified' : 'cancel'}
+                  </Icon>
+                  {selectedApplication.status}
+                </span>
+              )}
+            </section>
+          )}
+
+          <section className="flex flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm">
+            <div className="flex flex-col justify-between gap-space-md p-space-md md:flex-row md:items-center">
+              <div className="flex flex-wrap items-center gap-1">
                 {[
-                  { id: 'pending', label: `Pending (${pendingCount})` },
-                  { id: 'all', label: 'All programs' },
-                  { id: 'high-turnout', label: 'High turnout (>200)' },
+                  { id: 'pending', label: 'Pending', count: pendingCount },
+                  { id: 'all', label: 'All applications', count: applications.length },
+                  { id: 'approved', label: 'Approved', count: approvedCount },
+                  { id: 'rejected', label: 'Rejected', count: rejectedCount },
+                  { id: 'high-turnout', label: 'High turnout', count: null },
                 ].map((filter) => (
                   <button
                     aria-pressed={activeFilter === filter.id}
-                    className={`shrink-0 rounded-full px-3 py-1 font-label-sm text-label-sm transition-colors ${
+                    className={`rounded-lg px-3.5 py-1.5 font-label-md text-label-md transition-colors ${
                       activeFilter === filter.id
-                        ? 'bg-primary-container font-semibold text-on-primary'
-                        : 'bg-surface-container-low text-secondary hover:text-on-surface'
+                        ? 'bg-primary text-on-primary shadow-sm'
+                        : 'text-secondary hover:bg-surface-container-high'
                     }`}
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
                     type="button"
                   >
-                    {filter.label}
+                    {filter.label}{filter.count !== null ? ` (${filter.count})` : ' (>200)'}
                   </button>
                 ))}
               </div>
-            </section>
+              <label className="relative block w-full md:w-72">
+                <Icon className="absolute left-3 top-2.5 text-[18px] text-secondary">search</Icon>
+                <input
+                  className="h-9 w-full rounded-lg bg-surface-container-low py-2 pl-10 pr-3 font-body-sm text-body-sm text-on-surface placeholder:text-secondary/70 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search ID, title, or organization..."
+                  type="search"
+                  value={search}
+                  aria-label="Search submitted applications"
+                />
+              </label>
+            </div>
 
-            <div className="flex flex-col gap-space-sm">
-              {visibleApplications.map((application) => {
-                const isSelected = application.id === selectedId;
+            <div className="flex items-center justify-between px-space-lg pb-space-md">
+              <div>
+                <h2 className="font-headline-sm text-headline-sm text-on-surface">Submitted Activity Applications</h2>
+                <p className="font-body-sm text-body-sm text-secondary">Select a row to review the application and its proposal.</p>
+              </div>
+              <span className="font-code text-code text-secondary">{visibleApplications.length} records</span>
+            </div>
 
-                return (
-                  <button
-                    aria-pressed={isSelected}
-                    className={`relative w-full rounded-xl bg-surface-container-lowest p-space-md text-left shadow-sm transition-all hover:shadow-md ${
-                      isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-transparent'
-                    }`}
-                    key={application.id}
-                    onClick={() => {
-                      setSelectedId(application.id);
-                      setPage(1);
-                    }}
-                    type="button"
-                  >
-                    {isSelected && (
-                      <span className="absolute -left-0.5 top-4 bottom-4 w-1 rounded-r-full bg-primary-container" />
-                    )}
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="rounded bg-surface-container-high px-2 py-0.5 font-code text-code font-semibold text-on-surface-variant">
-                        {application.id}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-label-sm text-label-sm font-semibold ${
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-surface-container-low font-label-sm text-label-sm uppercase tracking-wider text-secondary">
+                  <tr>
+                    <th className="px-space-lg py-3">Activity &amp; Organization</th>
+                    <th className="px-space-md py-3">Schedule &amp; Venue</th>
+                    <th className="px-space-md py-3">Submitted</th>
+                    <th className="px-space-md py-3">Status</th>
+                    <th className="px-space-lg py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-container text-body-md">
+                  {visibleApplications.map((application) => (
+                    <tr
+                      className={`transition-colors hover:bg-surface-container-low/50 ${application.id === selectedId ? 'bg-surface-container-low/50' : ''}`}
+                      key={application.id}
+                    >
+                      <td className="px-space-lg py-4">
+                        <div className="font-label-lg text-label-lg text-on-surface">{application.title}</div>
+                        <div className="mt-0.5 font-body-sm text-body-sm text-secondary">
+                          {application.submitter} · {application.reference}
+                        </div>
+                      </td>
+                      <td className="px-space-md py-4">
+                        <div className="font-body-sm text-body-sm font-medium text-on-surface">{application.dates}</div>
+                        <div className="mt-0.5 font-body-sm text-body-sm text-secondary">{application.venue || 'Venue not provided'}</div>
+                      </td>
+                      <td className="px-space-md py-4 font-body-sm text-body-sm text-on-surface">{application.submitted}</td>
+                      <td className="px-space-md py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-semibold ${
                           application.status === 'pending'
-                            ? 'bg-amber-100 text-amber-900'
+                            ? 'bg-primary-fixed text-primary'
                             : application.status === 'approved'
                               ? 'bg-tertiary-fixed text-tertiary'
-                              : 'bg-error-container text-on-error-container'
-                        }`}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                        {application.status === 'pending'
-                          ? 'Awaiting Review'
-                          : application.status === 'approved'
-                            ? 'Approved'
-                            : 'Rejected'}
-                      </span>
-                    </div>
-                    <h3 className="mb-1 font-headline-sm text-headline-sm font-bold leading-snug text-on-surface">
-                      {application.title}
-                    </h3>
-                    <p className="mb-3 line-clamp-2 font-body-sm text-body-sm text-on-surface-variant">
-                      {application.description}
-                    </p>
-                    <div className="mb-3 grid grid-cols-2 gap-2 rounded-lg bg-surface-container-low p-3">
-                      <div>
-                        <span className="block font-label-sm text-label-sm text-secondary">
-                          Submitted
+                              : 'bg-error-container text-error'
+                        }`}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {application.status === 'pending' ? 'Pending Review' : `${application.status[0].toUpperCase()}${application.status.slice(1)}`}
                         </span>
-                        <span className="font-body-md text-body-md font-medium text-on-surface">
-                          {application.submitted}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block font-label-sm text-label-sm text-secondary">
-                          Proposed dates
-                        </span>
-                        <span className="font-body-md text-body-md font-medium text-on-surface">
-                          {application.dates}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block font-label-sm text-label-sm text-secondary">
-                          Expected turnout
-                        </span>
-                        <span className="flex items-center gap-1 font-body-md text-body-md font-semibold text-on-surface">
-                          <Icon className="text-[16px] text-primary">groups</Icon>
-                          {application.turnout} students
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block font-label-sm text-label-sm text-secondary">
-                          Proposed merit points
-                        </span>
-                        <div className="mt-0.5 flex flex-wrap gap-1">
-                          <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold text-rose-800">
-                            {application.redMerit}
-                          </span>
-                          <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-semibold text-sky-800">
-                            {application.blueMerit}
-                          </span>
+                      </td>
+                      <td className="px-space-lg py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            aria-label={`View details for ${application.title}`}
+                            className="rounded-lg bg-surface-container-high p-2 text-on-surface transition-colors hover:bg-surface-variant"
+                            title="View application details"
+                            onClick={() => {
+                              setSelectedId(application.id);
+                              setDetailsId(application.id);
+                            }}
+                            type="button"
+                          >
+                            <Icon className="text-[18px]">visibility</Icon>
+                          </button>
+                          <button
+                            aria-label={`View attached document for ${application.title}`}
+                            className="rounded-lg bg-primary p-2 text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={!application.has_proposal_document}
+                            onClick={() => {
+                              setSelectedId(application.id);
+                              setDocumentId(application.id);
+                            }}
+                            title={application.has_proposal_document ? 'View attached proposal PDF' : 'No document attached'}
+                            type="button"
+                          >
+                            <Icon className="text-[18px]">picture_as_pdf</Icon>
+                          </button>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-on-primary">
-                        {application.submitter
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((name) => name[0])
-                          .join('')}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-label-md text-label-md font-semibold leading-tight text-on-surface">
-                          {application.submitter}
-                        </span>
-                        <span className="block truncate font-body-sm text-body-sm text-secondary">
-                          {application.role} • {application.phone}
-                        </span>
-                      </span>
-                      <Icon className="text-[20px] text-primary">chevron_right</Icon>
-                    </div>
-                  </button>
-                );
-              })}
-              {visibleApplications.length === 0 && (
-                <div className="rounded-xl bg-surface-container-lowest p-space-lg text-center shadow-sm">
-                  <Icon className="mb-2 text-[28px] text-secondary">search_off</Icon>
-                  <p className="font-label-md text-label-md text-on-surface">No applications found</p>
-                  <p className="font-body-sm text-body-sm text-secondary">
-                    Try another search or queue filter.
+                      </td>
+                    </tr>
+                  ))}
+                  {visibleApplications.length === 0 && (
+                    <tr>
+                      <td className="px-space-lg py-12 text-center font-body-md text-body-md text-secondary" colSpan="5">
+                        {applications.length === 0
+                          ? 'No submitted applications yet. New submissions will appear here for review.'
+                          : 'No applications match this filter or search.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {detailsApplication && (
+        <div
+          aria-labelledby="application-details-title"
+          aria-modal="true"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/60 p-space-md backdrop-blur-sm"
+          onClick={() => setDetailsId(null)}
+          role="dialog"
+        >
+          <section
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-surface-container-lowest shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="sticky top-0 flex items-start justify-between gap-space-md border-b border-surface-container bg-surface-container-lowest p-space-lg">
+              <div>
+                <p className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-secondary">
+                  Application {detailsApplication.reference}
+                </p>
+                <h2 className="mt-1 font-headline-md text-headline-md font-bold text-on-surface" id="application-details-title">
+                  {detailsApplication.title}
+                </h2>
+                <p className="font-body-sm text-body-sm text-secondary">{detailsApplication.submitter}</p>
+              </div>
+              <button
+                aria-label="Close application details"
+                className="rounded-lg p-2 text-secondary hover:bg-surface-container"
+                onClick={() => setDetailsId(null)}
+                type="button"
+              >
+                <Icon>close</Icon>
+              </button>
+            </header>
+
+            <div className="grid gap-space-md p-space-lg sm:grid-cols-2">
+              {[
+                ['Status', detailsApplication.status === 'pending' ? 'Pending Review' : detailsApplication.status],
+                ['Submitted', detailsApplication.submitted],
+                ['Start', formatDate(detailsApplication.start_at, { dateStyle: 'medium', timeStyle: 'short' })],
+                ['End', formatDate(detailsApplication.end_at, { dateStyle: 'medium', timeStyle: 'short' })],
+                ['Venue', detailsApplication.venue || 'Not provided'],
+                ['Expected turnout', detailsApplication.turnout ? `${detailsApplication.turnout} people` : 'Not provided'],
+                ['Committee quota', detailsApplication.committeeQuota ?? 'Not provided'],
+                ['Participant quota', detailsApplication.participantQuota ?? 'Not provided'],
+                ['Merit tier', detailsApplication.meritTier],
+              ].map(([label, value]) => (
+                <div className="rounded-lg bg-surface-container-low p-space-md" key={label}>
+                  <p className="font-label-sm text-label-sm text-secondary">{label}</p>
+                  <p className="mt-0.5 font-body-md text-body-md font-semibold text-on-surface">{value}</p>
+                </div>
+              ))}
+              <div className="rounded-lg bg-surface-container-low p-space-md sm:col-span-2">
+                <p className="font-label-sm text-label-sm text-secondary">Additional merit notes</p>
+                <p className="mt-0.5 whitespace-pre-wrap font-body-md text-body-md text-on-surface">
+                  {detailsApplication.merit_notes || 'No additional notes provided.'}
+                </p>
+              </div>
+              {detailsApplication.review_notes && (
+                <div className="rounded-lg bg-error-container p-space-md sm:col-span-2">
+                  <p className="font-label-sm text-label-sm font-semibold text-error">Admin review notes</p>
+                  <p className="mt-0.5 whitespace-pre-wrap font-body-md text-body-md text-on-error-container">
+                    {detailsApplication.review_notes}
                   </p>
                 </div>
               )}
             </div>
-          </aside>
 
-          {selectedApplication ? (
-            <section aria-label="Selected application review" className="flex min-w-0 flex-col gap-space-md">
-              <div className="flex flex-col justify-between gap-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-sm sm:flex-row sm:items-center">
-                <div className="min-w-0">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span className="font-label-sm text-label-sm font-bold uppercase text-secondary">
-                      Document review workspace
-                    </span>
-                    <span className="rounded bg-surface-container px-2 py-0.5 font-code text-code">
-                      PDF / 8 pages
-                    </span>
-                  </div>
-                  <h2 className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">
-                    {selectedApplication.title}.pdf
-                  </h2>
-                </div>
-                {selectedApplication.status === 'pending' ? (
-                  <div className="flex flex-wrap items-center gap-2">
+            <footer className="flex flex-col justify-between gap-space-sm border-t border-surface-container bg-surface-container-low p-space-lg sm:flex-row sm:items-center">
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!detailsApplication.has_proposal_document}
+                onClick={() => {
+                  setDocumentId(detailsApplication.id);
+                  setDetailsId(null);
+                }}
+                type="button"
+              >
+                <Icon className="text-[18px]">picture_as_pdf</Icon>
+                {detailsApplication.has_proposal_document ? 'View attached document' : 'No document attached'}
+              </button>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="rounded-lg px-4 py-2 font-label-md text-label-md text-secondary hover:bg-surface-container"
+                  onClick={() => setDetailsId(null)}
+                  type="button"
+                >
+                  Close
+                </button>
+                {detailsApplication.status === 'pending' && (
+                  <>
                     <button
-                      className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-2 font-label-md text-label-md text-error shadow-sm ring-1 ring-error/30 transition-colors hover:bg-error-container"
-                      onClick={() => setIsRejectModalOpen(true)}
+                      className="rounded-lg bg-error px-4 py-2 font-label-md text-label-md text-on-error disabled:opacity-50"
+                      disabled={isUpdating}
+                      onClick={() => {
+                        setReviewError('');
+                        setRejectionReason('');
+                        setDetailsId(null);
+                        setIsRejectModalOpen(true);
+                      }}
                       type="button"
                     >
-                      <Icon className="text-[18px]">close</Icon>
                       Reject
                     </button>
                     <button
-                      className="flex items-center gap-2 rounded-lg bg-tertiary-container px-4 py-2 font-label-md text-label-md text-on-tertiary shadow-md transition-all hover:bg-tertiary hover:shadow-lg active:scale-[0.98]"
+                      className="rounded-lg bg-tertiary-container px-4 py-2 font-label-md text-label-md text-on-tertiary disabled:opacity-50"
+                      disabled={isUpdating}
                       onClick={() => updateApplicationStatus('approved')}
                       type="button"
                     >
-                      <Icon className="text-[20px]">task_alt</Icon>
-                      Approve application
+                      {isUpdating ? 'Saving…' : 'Approve'}
                     </button>
-                  </div>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-3 py-1.5 font-label-md text-label-md font-semibold capitalize text-secondary">
-                    <Icon className="text-[18px]">
-                      {selectedApplication.status === 'approved' ? 'verified' : 'cancel'}
-                    </Icon>
-                    {selectedApplication.status}
-                  </span>
+                  </>
                 )}
               </div>
-
-              <div className="overflow-hidden rounded-xl bg-surface-container shadow-md">
-                <div className="flex flex-wrap items-center justify-between gap-2 bg-inverse-surface px-4 py-2.5 text-inverse-on-surface">
-                  <div className="flex items-center gap-2">
-                    <Icon className="text-[20px] text-inverse-primary">picture_as_pdf</Icon>
-                    <span className="font-label-md text-label-md font-semibold tracking-wide">
-                      KTR_PROPOSAL_{selectedApplication.id}.pdf
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 font-code text-code">
-                      <button
-                        aria-label="Previous page"
-                        className="disabled:opacity-40"
-                        disabled={page === 1}
-                        onClick={() => setPage((current) => Math.max(1, current - 1))}
-                        type="button"
-                      >
-                        <Icon className="text-[16px]">chevron_left</Icon>
-                      </button>
-                      <span>Page {page} of 8</span>
-                      <button
-                        aria-label="Next page"
-                        className="disabled:opacity-40"
-                        disabled={page === 8}
-                        onClick={() => setPage((current) => Math.min(8, current + 1))}
-                        type="button"
-                      >
-                        <Icon className="text-[16px]">chevron_right</Icon>
-                      </button>
-                    </div>
-                    <span className="hidden h-4 w-px bg-white/20 sm:block" />
-                    <button
-                      aria-label="Zoom out"
-                      className="rounded p-1 hover:bg-white/10 disabled:opacity-40"
-                      disabled={zoom <= 75}
-                      onClick={() => setZoom((current) => Math.max(75, current - 25))}
-                      type="button"
-                    >
-                      <Icon className="text-[16px]">zoom_out</Icon>
-                    </button>
-                    <span className="min-w-10 text-center font-code text-code">{zoom}%</span>
-                    <button
-                      aria-label="Zoom in"
-                      className="rounded p-1 hover:bg-white/10 disabled:opacity-40"
-                      disabled={zoom >= 125}
-                      onClick={() => setZoom((current) => Math.min(125, current + 25))}
-                      type="button"
-                    >
-                      <Icon className="text-[16px]">zoom_in</Icon>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex max-h-[min(72vh,900px)] justify-center overflow-y-auto bg-surface-container-high/50 p-space-md sm:p-space-lg">
-                  <article
-                    className="relative min-h-[680px] w-full max-w-3xl origin-top rounded-lg bg-surface-container-lowest p-space-lg text-on-surface shadow-xl sm:p-space-xl"
-                    style={{ zoom: `${zoom}%` }}
-                  >
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.035]">
-                      <Icon className="text-[260px] text-primary">school</Icon>
-                    </div>
-                    <div className="relative">
-                      <header className="mb-space-lg flex flex-wrap items-start justify-between gap-space-md border-b border-surface-container pb-space-md">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary font-headline-sm text-headline-sm font-bold text-on-primary">
-                            UTM
-                          </div>
-                          <div>
-                            <h3 className="font-headline-sm text-headline-sm font-extrabold uppercase text-primary">
-                              Kolej Tun Razak
-                            </h3>
-                            <p className="font-label-sm text-label-sm text-secondary">
-                              Universiti Teknologi Malaysia • Skudai Johor
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-left sm:text-right">
-                          <span className="rounded bg-surface-container px-2 py-0.5 font-code text-code font-bold text-on-surface-variant">
-                            OFFICIAL DOCUMENT
-                          </span>
-                          <p className="mt-1 font-label-sm text-label-sm text-secondary">
-                            Ref: KTR/HEP/2026/M088
-                          </p>
-                        </div>
-                      </header>
-
-                      <div className="mb-space-lg rounded-lg bg-surface-container-low px-3 py-space-md text-center">
-                        <span className="mb-1 block font-label-sm text-label-sm font-bold uppercase tracking-wider text-primary">
-                          Student Activity Proposal 2026
-                        </span>
-                        <h4 className="font-headline-md text-headline-md font-extrabold text-on-surface">
-                          {selectedApplication.title}
-                        </h4>
-                        <p className="mt-1 font-body-sm text-body-sm text-secondary">
-                          Submitted by {selectedApplication.submitter} • Kolej Tun Razak
-                        </p>
-                      </div>
-
-                      <div className="space-y-space-lg">
-                        <section>
-                          <h5 className="mb-1 flex items-center gap-1.5 font-label-lg text-label-lg font-bold text-primary">
-                            1.0 Purpose &amp; objectives
-                          </h5>
-                          <p className="text-justify font-body-md text-body-md leading-relaxed text-on-surface-variant">
-                            {selectedApplication.description} This proposal is submitted for
-                            collegiate approval to encourage student participation, strengthen
-                            residential community ties, and support holistic student development.
-                          </p>
-                        </section>
-
-                        <section>
-                          <h5 className="mb-2 font-label-lg text-label-lg font-bold text-primary">
-                            2.0 Schedule &amp; logistics
-                          </h5>
-                          <div className="grid grid-cols-1 gap-2 rounded-lg bg-surface-container-low p-space-md text-body-sm sm:grid-cols-2">
-                            <p>
-                              <strong className="block text-on-surface">Proposed date:</strong>
-                              <span className="text-on-surface-variant">
-                                {selectedApplication.dates}, 8:00 AM – 11:30 PM
-                              </span>
-                            </p>
-                            <p>
-                              <strong className="block text-on-surface">Venue:</strong>
-                              <span className="text-on-surface-variant">
-                                Dewan Sri Resak &amp; Foyer Blok TR-B
-                              </span>
-                            </p>
-                            <p>
-                              <strong className="block text-on-surface">Expected turnout:</strong>
-                              <span className="text-on-surface-variant">
-                                {selectedApplication.turnout} students
-                              </span>
-                            </p>
-                            <p>
-                              <strong className="block text-on-surface">Organiser:</strong>
-                              <span className="text-on-surface-variant">
-                                Kolej Tun Razak Student Committee
-                              </span>
-                            </p>
-                          </div>
-                        </section>
-
-                        <section>
-                          <h5 className="mb-2 font-label-lg text-label-lg font-bold text-primary">
-                            3.0 Proposed collegiate merit structure
-                          </h5>
-                          <div className="overflow-x-auto rounded-lg shadow-sm">
-                            <table className="w-full text-left font-body-sm text-body-sm">
-                              <thead className="bg-surface-container-high font-label-sm uppercase text-on-surface-variant">
-                                <tr>
-                                  <th className="px-3 py-2">Participant category</th>
-                                  <th className="px-3 py-2">Role</th>
-                                  <th className="px-3 py-2 text-center">KTR merit</th>
-                                  <th className="px-3 py-2">Eligibility</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-surface-container-low bg-surface-container-lowest">
-                                <tr>
-                                  <td className="px-3 py-2 font-semibold text-on-surface">
-                                    Committee members
-                                  </td>
-                                  <td className="px-3 py-2 text-secondary">Management &amp; technical</td>
-                                  <td className="px-3 py-2 text-center font-bold text-rose-700">
-                                    {selectedApplication.redMerit}
-                                  </td>
-                                  <td className="px-3 py-2 font-medium text-tertiary-container">
-                                    Block priority
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="px-3 py-2 font-semibold text-on-surface">
-                                    Event participants
-                                  </td>
-                                  <td className="px-3 py-2 text-secondary">Competition &amp; activities</td>
-                                  <td className="px-3 py-2 text-center font-bold text-sky-700">
-                                    {selectedApplication.blueMerit}
-                                  </td>
-                                  <td className="px-3 py-2 font-medium text-secondary">
-                                    Standard residency
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </section>
-
-                        <div className="flex flex-col justify-between gap-2 rounded-lg bg-surface-container-low p-space-md sm:flex-row sm:items-center">
-                          <div>
-                            <span className="font-label-sm text-label-sm font-semibold uppercase text-secondary">
-                              Prepared &amp; endorsed by
-                            </span>
-                            <p className="mt-0.5 font-label-lg text-label-lg font-bold text-on-surface">
-                              {selectedApplication.submitter}
-                            </p>
-                            <p className="font-body-sm text-body-sm text-secondary">
-                              {selectedApplication.role}, Kolej Tun Razak
-                            </p>
-                          </div>
-                          <div className="sm:text-right">
-                            <span className="inline-flex items-center gap-1 font-label-sm text-label-sm font-semibold text-tertiary-container">
-                              <Icon className="text-[16px]">verified</Icon>
-                              Fellow endorsement verified
-                            </span>
-                            <p className="font-code text-code text-secondary">
-                              Submitted {selectedApplication.submitted}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <footer className="mt-space-lg flex justify-between border-t border-surface-container pt-space-sm font-label-sm text-label-sm text-secondary">
-                        <span>KTR Merit &amp; Residence Management System</span>
-                        <span>Page {page} / 8</span>
-                      </footer>
-                    </div>
-                  </article>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
-                <h3 className="mb-space-sm flex items-center gap-2 font-label-lg text-label-lg font-bold text-on-surface">
-                  <Icon className="text-[18px] text-primary">fact_check</Icon>
-                  Collegiate admin pre-approval criteria
-                </h3>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {[
-                    'Venue reservation confirmed',
-                    'No academic exam conflicts',
-                    'Fellow endorsement valid',
-                  ].map((criterion) => (
-                    <div
-                      className="flex items-center gap-2 rounded-lg bg-surface-container-low p-2.5"
-                      key={criterion}
-                    >
-                      <Icon className="text-[18px] text-tertiary-container">check_circle</Icon>
-                      <span className="font-body-sm text-body-sm text-on-surface">{criterion}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg bg-surface-container p-space-sm">
-                <Icon className="mt-0.5 shrink-0 text-[20px] text-primary">policy</Icon>
-                <p className="font-body-sm text-body-sm leading-snug text-on-surface-variant">
-                  <strong className="text-on-surface">Administrative SOP US 4.9:</strong> Approval
-                  confirms the proposed merit entitlement and prepares the official collegiate
-                  clearance record.
-                </p>
-              </div>
-            </section>
-          ) : (
-            <section className="flex min-h-80 items-center justify-center rounded-xl bg-surface-container-lowest p-space-xl text-center shadow-sm">
-              <div>
-                <Icon className="mb-2 text-[36px] text-secondary">inbox</Icon>
-                <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">
-                  Select an application
-                </h2>
-                <p className="font-body-sm text-body-sm text-secondary">
-                  Choose a submission from the queue to review its details.
-                </p>
-              </div>
-            </section>
-          )}
+            </footer>
+          </section>
         </div>
-      </div>
+      )}
+
+      {documentApplication && (
+        <div
+          aria-labelledby="application-document-title"
+          aria-modal="true"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/70 p-space-md backdrop-blur-sm"
+          onClick={() => setDocumentId(null)}
+          role="dialog"
+        >
+          <section
+            className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="flex items-center justify-between gap-space-md border-b border-surface-container p-space-md">
+              <div className="flex min-w-0 items-center gap-2">
+                <Icon className="text-primary">picture_as_pdf</Icon>
+                <h2 className="truncate font-headline-sm text-headline-sm font-bold text-on-surface" id="application-document-title">
+                  {documentApplication.title} — attached proposal
+                </h2>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <a
+                  className="rounded-lg bg-surface-container-high px-3 py-2 font-label-sm text-label-sm text-on-surface hover:bg-surface-variant"
+                  href={`/admin/activity-applications/${documentApplication.id}/document`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open in new tab
+                </a>
+                <button
+                  aria-label="Close attached document"
+                  className="rounded-lg p-2 text-secondary hover:bg-surface-container"
+                  onClick={() => setDocumentId(null)}
+                  type="button"
+                >
+                  <Icon>close</Icon>
+                </button>
+              </div>
+            </header>
+            <iframe
+              className="min-h-0 flex-1 bg-surface-container"
+              src={`/admin/activity-applications/${documentApplication.id}/document`}
+              title={`Attached proposal for ${documentApplication.title}`}
+            />
+          </section>
+        </div>
+      )}
 
       {isRejectModalOpen && selectedApplication && (
         <div
@@ -789,7 +678,7 @@ export default function Admin() {
                   Reject application
                 </h2>
                 <p className="font-body-sm text-body-sm text-secondary">
-                  Add a clear reason for {selectedApplication.id}. The submitter will be notified.
+                  Add a clear reason for {selectedApplication.reference}. This note will be saved with the decision.
                 </p>
               </div>
               <button
@@ -817,6 +706,7 @@ export default function Admin() {
                 placeholder="Explain what needs to be addressed..."
                 value={rejectionReason}
               />
+              {reviewError && <p className="mt-2 font-body-sm text-body-sm text-error" role="alert">{reviewError}</p>}
               <div className="mt-1 flex items-center justify-between gap-2">
                 <span
                   className={`font-body-sm text-body-sm ${
@@ -844,7 +734,7 @@ export default function Admin() {
               </button>
               <button
                 className="flex items-center gap-2 rounded-lg bg-error px-4 py-2 font-label-md text-label-md text-on-error shadow-sm transition-colors hover:bg-on-error-container disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={rejectionReason.trim().length < 20}
+                disabled={rejectionReason.trim().length < 20 || isUpdating}
                 type="submit"
               >
                 <Icon className="text-[18px]">cancel</Icon>

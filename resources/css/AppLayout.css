@@ -4,6 +4,7 @@
 .app-layout {
     min-height: 100vh;
     overscroll-behavior: none;
+    zoom: 0.9;
 }
 
 .app-layout main > :first-child {
