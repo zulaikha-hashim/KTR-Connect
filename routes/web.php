@@ -34,3 +34,7 @@ Route::patch('/admin/activity-applications/{application}', [ActivityApplicationC
 
 Route::get('/admin/activity-applications/{application}/document', [ActivityApplicationController::class, 'document'])
     ->name('admin.activity-applications.document');
+    
+Route::get('/admin/support', function () {
+    return inertia('AdminSupport');
+});

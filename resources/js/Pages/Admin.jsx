@@ -44,23 +44,26 @@ const adminNavigation = [
     ],
   },
   {
-    title: 'Collegiate Administration',
-    items: [
-      {
-        label: 'Admin Analytics Dashboard',
-        icon: 'dashboard',
-        path: 'collegiate-admin-dashboard',
-        href: '#',
-      },
-      {
-        label: 'Activity Review & Approvals',
-        icon: 'fact_check',
-        path: 'activity-reviews-and-approvals',
-        href: '/admin',
-        active: true,
-      },
-    ],
-  },
+        title: 'COLLEGIATE ADMINISTRATION',
+        items: [
+            {
+                label: 'Admin Analytics Dashboard',
+                icon: 'dashboard',
+                href: '/admin',
+            },
+            {
+                label: 'Activity Review & Approvals',
+                icon: 'task_alt',
+                href: '/admin',
+                active: true,
+            },
+            {
+                label: 'Support & External Links',
+                icon: 'link',
+                href: '/admin/support',
+            },
+        ],
+    },
 ];
 
 const adminProfile = {
