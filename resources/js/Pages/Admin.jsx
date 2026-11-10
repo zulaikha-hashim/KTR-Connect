@@ -4,6 +4,17 @@ import AppLayout from '../Components/AppLayout';
 
 const adminNavigation = [
   {
+    title: 'Hostel Management',
+    items: [
+      {
+        label: 'Room Inventory',
+        icon: 'meeting_room',
+        path: 'admin-hostel-rooms',
+        href: '/admin/hostel/rooms',
+      },
+    ],
+  },
+  {
     title: 'Student Resident',
     items: [
       {

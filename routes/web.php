@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ActivityApplicationController;
+use App\Http\Controllers\Admin\HostelInventoryController;
+
 use App\Models\ActivityApplication;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,3 +36,6 @@ Route::patch('/admin/activity-applications/{application}', [ActivityApplicationC
 
 Route::get('/admin/activity-applications/{application}/document', [ActivityApplicationController::class, 'document'])
     ->name('admin.activity-applications.document');
+
+Route::get('/admin/hostel/rooms', [HostelInventoryController::class, 'index'])
+    ->name('admin.hostel.rooms.index');
