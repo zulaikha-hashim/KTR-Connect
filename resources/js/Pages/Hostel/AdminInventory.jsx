@@ -1,7 +1,8 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '../../Components/AppLayout';
 import RoomDetailsDialog from '../../Components/Hostel/RoomDetailsDialog';
+import BedStatusBadge from '../../Components/Hostel/BedStatusBadge';
 
 const categoryLabels = {
   single_standard: 'Single Standard',
@@ -65,13 +66,47 @@ function FilterSelect({ label, value, onChange, options }) {
   );
 }
 
-export default function AdminInventory({ rooms = [] }) {
-  const [search, setSearch] = useState('');
-  const [zone, setZone] = useState('all');
-  const [block, setBlock] = useState('all');
-  const [floor, setFloor] = useState('all');
-  const [category, setCategory] = useState('all');
-  const [selectedRoom, setSelectedRoom] = useState(null);
+export default function AdminInventory({
+  rooms = [],
+  academicSessions = [],
+  selectedSessionId = null,
+}) {  
+    const [search, setSearch] = useState('');
+    const [zone, setZone] = useState('all');
+    const [block, setBlock] = useState('all');
+    const [floor, setFloor] = useState('all');
+    const [category, setCategory] = useState('all');
+    const [selectedRoom, setSelectedRoom] = useState(null);
+
+    const [isChangingSession, setIsChangingSession] = useState(false);
+    const [sessionError, setSessionError] = useState('');
+
+    const selectedSession = academicSessions.find(
+    (session) => String(session.id) === String(selectedSessionId)
+    );
+
+    function changeSession(sessionId) {
+    if (!sessionId) return;
+
+    setSelectedRoom(null);
+    setSessionError('');
+
+    router.get(
+        '/admin/hostel/rooms',
+        { session: sessionId },
+        {
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => setIsChangingSession(true),
+        onError: () => {
+            setSessionError(
+            'The session could not be selected. Refresh the page and try again.'
+            );
+        },
+        onFinish: () => setIsChangingSession(false),
+        }
+    );
+}
 
   const blocks = [
     ...new Map(
@@ -102,6 +137,18 @@ export default function AdminInventory({ rooms = [] }) {
     visibleRooms.map((room) => room.block.id)
   ).size;
 
+  const visibleBedRecords = visibleRooms.flatMap(
+  (room) => room.beds
+  );
+
+  const occupiedBeds = visibleBedRecords.filter(
+  (bed) => bed.reservation?.status === 'confirmed'
+  ).length;
+
+  const heldBeds = visibleBedRecords.filter(
+  (bed) => bed.reservation?.status === 'held'
+  ).length;
+
   function clearFilters() {
     setSearch('');
     setZone('all');
@@ -114,7 +161,11 @@ export default function AdminInventory({ rooms = [] }) {
     <AppLayout
       navigationSections={navigation}
       profile={profile}
-      sessionLabel="Hostel inventory · Local preview"
+      sessionLabel={
+        selectedSession
+            ? `Academic Session: ${selectedSession.name}`
+            : 'No academic session configured'
+      }
     >
       <Head title="Admin Hostel Inventory" />
 
@@ -134,14 +185,68 @@ export default function AdminInventory({ rooms = [] }) {
         </header>
 
         <section
-          aria-label="Filtered inventory totals"
-          className="mb-6 grid gap-4 sm:grid-cols-3"
+        aria-label="Academic session selection"
+        className="mb-6 rounded-xl border border-slate-200 bg-white p-4"
         >
-          {[
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="flex w-full flex-col gap-1 text-sm text-slate-600 sm:max-w-sm">
+            <span>Academic session</span>
+
+            <select
+                className={controlClass}
+                value={
+                selectedSessionId === null
+                    ? ''
+                    : String(selectedSessionId)
+                }
+                disabled={
+                isChangingSession || academicSessions.length === 0
+                }
+                onChange={(event) => changeSession(event.target.value)}
+            >
+                {academicSessions.length === 0 && (
+                <option value="">No sessions configured</option>
+                )}
+
+                {academicSessions.map((session) => (
+                <option
+                    key={session.id}
+                    value={String(session.id)}
+                >
+                    {session.name}
+                </option>
+                ))}
+            </select>
+            </label>
+
+            <p
+            aria-live="polite"
+            className="text-sm text-slate-500"
+            >
+            {isChangingSession
+                ? 'Loading selected session…'
+                : 'Physical room inventory is shared across academic sessions.'}
+            </p>
+        </div>
+
+        {sessionError && (
+            <p role="alert" className="mt-3 text-sm text-red-700">
+            {sessionError}
+            </p>
+        )}
+        </section>
+
+        <section
+          aria-label="Filtered inventory totals"
+          className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+        >
+        {[
             ['Rooms', visibleRooms.length],
             ['Beds', visibleBeds],
+            ['Occupied Beds', occupiedBeds],
+            ['Held Beds', heldBeds],
             ['Blocks', visibleBlocks],
-          ].map(([label, value]) => (
+        ].map(([label, value]) => (
             <div
               key={label}
               className="rounded-xl border border-slate-200 bg-white p-5"
@@ -243,8 +348,8 @@ export default function AdminInventory({ rooms = [] }) {
         </section>
 
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          Capacity records are connected. Booking and restriction records
-          are not connected yet, so availability is not shown.
+          Bookings and applicable restrictions are shown for the selected
+          academic session. Availability editing is not enabled yet.
         </p>
 
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -305,12 +410,19 @@ export default function AdminInventory({ rooms = [] }) {
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
                         {room.beds.map((bed) => (
-                          <span
-                            key={bed.id}
-                            className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700"
-                          >
-                            Bed {bed.label}
-                          </span>
+                            <div
+                                key={bed.id}
+                                className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1.5"
+                            >
+                                <span className="whitespace-nowrap text-xs font-medium text-slate-700">
+                                Bed {bed.label}
+                                </span>
+
+                                <BedStatusBadge
+                                    status={bed.reservation?.status}
+                                    restrictions={bed.restrictions || []}
+                                />
+                            </div>
                         ))}
 
                         {room.beds.length === 0 && 'No beds configured'}

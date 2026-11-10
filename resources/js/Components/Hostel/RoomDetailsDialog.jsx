@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import BedStatusBadge from './BedStatusBadge';
 
 const categoryLabels = {
   single_standard: 'Single Standard',
@@ -181,12 +182,86 @@ export default function RoomDetailsDialog({ room, onClose }) {
                     key={bed.id}
                     className="rounded-xl border border-slate-200 p-4"
                   >
-                    <p className="font-semibold">
-                      Bed {bed.label}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Allocation data is not connected yet.
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold">
+                        Bed {bed.label}
+                      </p>
+
+                      <BedStatusBadge
+                        status={bed.reservation?.status}
+                        restrictions={bed.restrictions || []}
+                      />
+                    </div>
+
+                    {bed.reservation ? (
+                      <dl className="mt-3 space-y-3 text-sm">
+                        <div>
+                          <dt className="text-xs text-slate-500">
+                            {bed.reservation.status === 'confirmed'
+                              ? 'Resident'
+                              : 'Held by'}
+                          </dt>
+                          <dd className="mt-1 font-medium">
+                            {bed.reservation.student_name || 'Name not provided'}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="text-xs text-slate-500">
+                            Reservation reference
+                          </dt>
+                          <dd className="mt-1 break-all">
+                            {bed.reservation.reference}
+                          </dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No confirmed allocation or unexpired hold exists for
+                        this bed in the selected academic session.
+                      </p>
+                    )}
+
+                    {(bed.restrictions || []).map((restriction) => (
+                      <section
+                        key={restriction.id}
+                        className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3"
+                      >
+                        <h4 className="text-sm font-semibold text-slate-800">
+                          {restriction.type === 'maintenance'
+                            ? 'Maintenance restriction'
+                            : 'Administrative block'}
+                        </h4>
+
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
+                          {restriction.reason}
+                        </p>
+
+                        <dl className="mt-3 space-y-2 text-xs">
+                          <div>
+                            <dt className="text-slate-500">Applies to</dt>
+                            <dd className="mt-0.5 text-slate-700">
+                              {restriction.scope || 'Session not provided'}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-slate-500">Recorded by</dt>
+                            <dd className="mt-0.5 text-slate-700">
+                              {restriction.created_by_name || 'Name not provided'}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-slate-500">Restriction reference</dt>
+                            <dd className="mt-0.5 break-all text-slate-700">
+                              {restriction.reference}
+                            </dd>
+                          </div>
+                        </dl>
+                      </section>
+                    ))}
+
                   </div>
                 ))}
 
