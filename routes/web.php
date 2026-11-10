@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\ActivityApplicationController;
+use App\Http\Controllers\ChatbotInfoController;
 use App\Models\ActivityApplication;
+use App\Models\ChatbotInfo;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,3 +36,12 @@ Route::patch('/admin/activity-applications/{application}', [ActivityApplicationC
 
 Route::get('/admin/activity-applications/{application}/document', [ActivityApplicationController::class, 'document'])
     ->name('admin.activity-applications.document');
+
+// Chatbot Management Routes
+Route::put('/chatbot-info/{id}', [ChatbotInfoController::class, 'update'])->name('chatbot.update');
+Route::post('/chatbot-info/{id}/submit', [ChatbotInfoController::class, 'submitApproval'])->name('chatbot.submit');
+
+Route::get('/chatbot-ui', function () {
+    $chatbot = ChatbotInfo::first();
+    return view('chatbot', compact('chatbot'));
+});
