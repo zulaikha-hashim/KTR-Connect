@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityApplication;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -28,6 +30,28 @@ class ActivityApplicationTest extends TestCase
                 ->where('applications.0.activity_name', 'Database Activity'));
     }
 
+    public function test_authenticated_felo_only_sees_their_activity_applications(): void
+    {
+        $felo = User::factory()->create();
+        ActivityApplication::create([
+            'felo_id' => $felo->id,
+            'activity_name' => 'My Activity',
+            'status' => 'pending',
+        ]);
+        ActivityApplication::create([
+            'activity_name' => 'Another Felo Activity',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($felo)
+            ->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Staff')
+                ->has('applications', 1)
+                ->where('applications.0.activity_name', 'My Activity'));
+    }
+
     public function test_admin_review_queue_loads_submitted_applications_but_not_drafts(): void
     {
         ActivityApplication::create([
@@ -49,7 +73,12 @@ class ActivityApplicationTest extends TestCase
 
     public function test_valid_application_is_saved_and_submitted_for_approval(): void
     {
-        $response = $this->from('/')->post('/activity-applications', [
+        Storage::fake('local');
+        Mail::fake();
+        config(['mail.admin_address' => 'admin@example.test']);
+        $felo = User::factory()->create();
+
+        $response = $this->actingAs($felo)->from('/')->post('/activity-applications', [
             'status' => 'pending',
             'activity_name' => 'KTR Sports Day',
             'organization' => 'jkm_sports',
@@ -61,6 +90,7 @@ class ActivityApplicationTest extends TestCase
             'participant_quota' => '225',
             'merit_tier' => 'standard',
             'merit_notes' => 'Sports charter event.',
+            'proposal_document' => UploadedFile::fake()->create('proposal.pdf', 100, 'application/pdf'),
         ]);
 
         $response->assertRedirect('/');
@@ -68,10 +98,18 @@ class ActivityApplicationTest extends TestCase
             'activity_name' => 'KTR Sports Day',
             'organization' => 'jkm_sports',
             'status' => 'pending',
+            'felo_id' => $felo->id,
             'expected_turnout' => 250,
             'committee_quota' => 25,
             'participant_quota' => 225,
         ]);
+
+        $application = ActivityApplication::query()->firstOrFail();
+        $this->assertNotNull($application->proposal_document_path);
+        Storage::disk('local')->assertExists($application->proposal_document_path);
+        Mail::assertSent(\App\Mail\ActivityApplicationSubmitted::class, fn ($mail) =>
+            $mail->application->is($application)
+            && str_contains($mail->render(), 'KTR Sports Day'));
     }
 
     public function test_incomplete_application_can_be_saved_as_a_draft(): void
@@ -137,7 +175,29 @@ class ActivityApplicationTest extends TestCase
                 'committee_quota',
                 'participant_quota',
                 'merit_tier',
+                'proposal_document',
             ]);
+
+        $this->assertDatabaseCount('activity_applications', 0);
+    }
+
+    public function test_pending_application_rejects_non_pdf_proposals(): void
+    {
+        $this->from('/')->post('/activity-applications', [
+            'status' => 'pending',
+            'activity_name' => 'KTR Sports Day',
+            'organization' => 'jkm_sports',
+            'start_at' => '2026-12-20T08:30',
+            'end_at' => '2026-12-20T18:00',
+            'venue' => 'Dewan Sri Meranti',
+            'expected_turnout' => '250',
+            'committee_quota' => '25',
+            'participant_quota' => '225',
+            'merit_tier' => 'standard',
+            'proposal_document' => UploadedFile::fake()->create('proposal.txt', 100, 'text/plain'),
+        ])
+            ->assertRedirect('/')
+            ->assertSessionHasErrors('proposal_document');
 
         $this->assertDatabaseCount('activity_applications', 0);
     }

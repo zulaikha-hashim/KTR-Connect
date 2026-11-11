@@ -10,8 +10,13 @@ class ChatbotInfo extends Model
     use HasFactory;
 
     protected $fillable = [
+        'content_id',
+        'category',
+        'target_audience',
         'title',
+        'keywords',
         'content',
+        'admin_id',
         'status',
     ];
 }

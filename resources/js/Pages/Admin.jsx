@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../Components/AppLayout';
+import Chatbot from './Chatbot';
 
 const adminNavigation = [
   {
@@ -59,6 +60,12 @@ const adminNavigation = [
         href: '/admin',
         active: true,
       },
+      {
+        label: 'Update Chatbot Information',
+        icon: 'smart_toy',
+        path: 'update-chatbot-information',
+        href: '/admin?modal=chatbot',
+      },
     ],
   },
 ];
@@ -116,7 +123,7 @@ function Icon({ children, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
 }
 
-export default function Admin({ applications: submittedApplications = [] }) {
+export default function Admin({ applications: submittedApplications = [], chatbot = null, showChatbot = false }) {
   const applications = useMemo(
     () => submittedApplications.map(toReviewApplication),
     [submittedApplications],
@@ -744,6 +751,7 @@ export default function Admin({ applications: submittedApplications = [] }) {
           </form>
         </div>
       )}
+      {showChatbot && <Chatbot chatbot={chatbot} />}
     </AppLayout>
   );
 }

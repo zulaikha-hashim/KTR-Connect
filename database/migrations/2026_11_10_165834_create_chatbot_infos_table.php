@@ -11,13 +11,18 @@ return new class extends Migration
      */
 public function up(): void
 {
-    Schema::create('chatbot_infos', function (Blueprint $table) {
-        $table->id();
-        $table->string('title');
-        $table->text('content');
-        $table->string('status')->default('pending'); // Tracks approval status
-        $table->timestamps();
-    });
+   Schema::create('chatbot_infos', function (Blueprint $table) {
+    $table->id();
+    $table->string('content_id')->default('INFO-KTR-001');
+    $table->string('category')->default('Registration Guidelines');
+    $table->string('target_audience')->default('All Undergraduate Residents');
+    $table->string('title');
+    $table->text('keywords')->nullable(); // e.g. registration, guidelines, room booking
+    $table->text('content');
+    $table->string('admin_id')->default('En. Razak'); // Tracks admin who last updated
+    $table->string('status')->default('pending');
+    $table->timestamps();
+});
 }
 
     /**

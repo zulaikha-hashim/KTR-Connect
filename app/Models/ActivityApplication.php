@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityApplication extends Model
 {
     protected $fillable = [
         'activity_name',
+        'felo_id',
         'organization',
         'start_at',
         'end_at',
@@ -35,4 +37,9 @@ class ActivityApplication extends Model
     protected $hidden = [
         'proposal_document_path',
     ];
+
+    public function felo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'felo_id');
+    }
 }

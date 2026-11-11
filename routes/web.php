@@ -4,12 +4,16 @@ use App\Http\Controllers\ActivityApplicationController;
 use App\Http\Controllers\ChatbotInfoController;
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
     return Inertia::render('Staff', [
-        'applications' => ActivityApplication::query()->latest()->get(),
+        'applications' => ActivityApplication::query()
+            ->when($request->user(), fn ($query, $user) => $query->where('felo_id', $user->getAuthIdentifier()))
+            ->latest()
+            ->get(),
     ]);
 })->name('staff');
 
@@ -28,6 +32,8 @@ Route::get('/admin', function () {
 
     return Inertia::render('Admin', [
         'applications' => $applications,
+        'chatbot' => ChatbotInfo::first(),
+        'showChatbot' => request()->query('modal') === 'chatbot',
     ]);
 })->name('admin');
 
@@ -42,6 +48,5 @@ Route::put('/chatbot-info/{id}', [ChatbotInfoController::class, 'update'])->name
 Route::post('/chatbot-info/{id}/submit', [ChatbotInfoController::class, 'submitApproval'])->name('chatbot.submit');
 
 Route::get('/chatbot-ui', function () {
-    $chatbot = ChatbotInfo::first();
-    return view('chatbot', compact('chatbot'));
+    return redirect()->route('admin', ['modal' => 'chatbot']);
 });
