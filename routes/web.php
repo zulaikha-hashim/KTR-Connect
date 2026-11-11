@@ -4,16 +4,12 @@ use App\Http\Controllers\ActivityApplicationController;
 use App\Http\Controllers\ChatbotInfoController;
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function (Request $request) {
+Route::get('/', function () {
     return Inertia::render('Staff', [
-        'applications' => ActivityApplication::query()
-            ->when($request->user(), fn ($query, $user) => $query->where('felo_id', $user->getAuthIdentifier()))
-            ->latest()
-            ->get(),
+        'applications' => ActivityApplication::query()->latest()->get(),
     ]);
 })->name('staff');
 
@@ -49,4 +45,8 @@ Route::post('/chatbot-info/{id}/submit', [ChatbotInfoController::class, 'submitA
 
 Route::get('/chatbot-ui', function () {
     return redirect()->route('admin', ['modal' => 'chatbot']);
+});
+
+Route::get('/admin/support', function () {
+    return inertia('AdminSupport');
 });

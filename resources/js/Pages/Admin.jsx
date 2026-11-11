@@ -51,7 +51,7 @@ const adminNavigation = [
         label: 'Admin Analytics Dashboard',
         icon: 'dashboard',
         path: 'collegiate-admin-dashboard',
-        href: '#',
+        href: '/admin',
       },
       {
         label: 'Activity Review & Approvals',
@@ -65,6 +65,12 @@ const adminNavigation = [
         icon: 'smart_toy',
         path: 'update-chatbot-information',
         href: '/admin?modal=chatbot',
+      },
+      {
+        label: 'Support & External Links',
+        icon: 'link',
+        path: 'admin-support',
+        href: '/admin/support',
       },
     ],
   },
