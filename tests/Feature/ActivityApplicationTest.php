@@ -238,6 +238,25 @@ class ActivityApplicationTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_reject_with_a_short_review_note(): void
+    {
+        $application = ActivityApplication::create([
+            'activity_name' => 'Activity with a short rejection reason',
+            'status' => 'pending',
+        ]);
+
+        $this->patch("/admin/activity-applications/{$application->id}", [
+            'status' => 'rejected',
+            'review_notes' => 'Fix venue',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('activity_applications', [
+            'id' => $application->id,
+            'status' => 'rejected',
+            'review_notes' => 'Fix venue',
+        ]);
+    }
+
     public function test_admin_cannot_reject_without_review_notes(): void
     {
         $application = ActivityApplication::create([

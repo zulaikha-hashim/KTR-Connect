@@ -28,16 +28,16 @@ class ChatbotInfoController extends Controller
             'status' => 'pending', // Resets approval status on edit
         ]);
 
-        return redirect()->back()->with('success', 'Chatbot information updated successfully!');
+        return redirect()->route('admin')->with('success', 'Saved Successfully');
     }
 
-    public function submitApproval($id)
+    public function deploy($id)
     {
         $chatbot = ChatbotInfo::findOrFail($id);
         $chatbot->update([
-            'status' => 'submitted',
+            'status' => 'deployed',
         ]);
 
-        return redirect()->back()->with('success', 'Submitted for collegiate approval successfully!');
+        return redirect()->route('admin')->with('success', 'Chatbot deployed successfully.');
     }
 }

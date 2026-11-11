@@ -129,7 +129,7 @@ function Icon({ children, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
 }
 
-export default function Admin({ applications: submittedApplications = [], chatbot = null, showChatbot = false }) {
+export default function Admin({ applications: submittedApplications = [], chatbot = null, showChatbot = false, successMessage = null }) {
   const applications = useMemo(
     () => submittedApplications.map(toReviewApplication),
     [submittedApplications],
@@ -192,6 +192,12 @@ export default function Admin({ applications: submittedApplications = [], chatbo
   }, [toast]);
 
   useEffect(() => {
+    if (successMessage) {
+      setToast({ status: 'approved', title: successMessage, message: '' });
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
     if (!isRejectModalOpen && !detailsApplication && !documentApplication) return undefined;
 
     const handleKeyDown = (event) => {
@@ -238,7 +244,7 @@ export default function Admin({ applications: submittedApplications = [], chatbo
 
   const handleReject = (event) => {
     event.preventDefault();
-    if (rejectionReason.trim().length < 20 || rejectionReason.trim().length > 400) return;
+    if (!rejectionReason.trim() || rejectionReason.trim().length > 400) return;
 
     updateApplicationStatus('rejected', rejectionReason.trim());
   };
@@ -262,7 +268,7 @@ export default function Admin({ applications: submittedApplications = [], chatbo
               <Icon className="text-[20px]">check_circle</Icon>
               <div>
                 <p className="font-label-lg text-label-lg">{toast.title}</p>
-                <p className="font-body-sm text-body-sm opacity-90">{toast.message}</p>
+                {toast.message && <p className="font-body-sm text-body-sm opacity-90">{toast.message}</p>}
               </div>
             </div>
             <button
@@ -723,14 +729,14 @@ export default function Admin({ applications: submittedApplications = [], chatbo
               <div className="mt-1 flex items-center justify-between gap-2">
                 <span
                   className={`font-body-sm text-body-sm ${
-                    rejectionReason.trim().length >= 20
+                    rejectionReason.trim().length > 0
                       ? 'text-tertiary-container'
                       : 'text-secondary'
                   }`}
                 >
-                  {rejectionReason.trim().length < 20
-                    ? `${20 - rejectionReason.trim().length} more characters required`
-                    : 'Reason is ready to submit'}
+                  {rejectionReason.trim().length > 0
+                    ? 'Reason is ready to submit'
+                    : 'A reason is required to reject.'}
                 </span>
                 <span className="font-code text-code text-secondary">
                   {rejectionReason.length}/400
@@ -747,7 +753,7 @@ export default function Admin({ applications: submittedApplications = [], chatbo
               </button>
               <button
                 className="flex items-center gap-2 rounded-lg bg-error px-4 py-2 font-label-md text-label-md text-on-error shadow-sm transition-colors hover:bg-on-error-container disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={rejectionReason.trim().length < 20 || isUpdating}
+                disabled={!rejectionReason.trim() || isUpdating}
                 type="submit"
               >
                 <Icon className="text-[18px]">cancel</Icon>

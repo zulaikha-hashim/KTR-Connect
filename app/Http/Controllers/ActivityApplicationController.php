@@ -82,7 +82,7 @@ class ActivityApplicationController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
-            'review_notes' => ['required_if:status,rejected', 'nullable', 'string', 'min:20', 'max:400'],
+            'review_notes' => ['required_if:status,rejected', 'nullable', 'string', 'max:400'],
         ]);
 
         $updated = ActivityApplication::query()

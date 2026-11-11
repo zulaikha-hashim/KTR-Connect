@@ -10,8 +10,7 @@ function FieldError({ message }) {
 }
 
 export default function Chatbot({ chatbot }) {
-  const [notice, setNotice] = useState('');
-  const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
   const form = useForm({
     category: chatbot?.category ?? 'Registration Guidelines',
     target_audience: chatbot?.target_audience ?? 'All Undergraduate Residents',
@@ -22,20 +21,16 @@ export default function Chatbot({ chatbot }) {
 
   const updateChatbot = (event) => {
     event.preventDefault();
-    setNotice('');
     form.put(`/chatbot-info/${chatbot?.id ?? 1}`, {
       preserveScroll: true,
-      onSuccess: () => setNotice('Chatbot information updated successfully!'),
     });
   };
 
-  const submitForApproval = () => {
-    setNotice('');
-    setSubmittingApproval(true);
-    router.post(`/chatbot-info/${chatbot?.id ?? 1}/submit`, {}, {
+  const deployBot = () => {
+    setIsDeploying(true);
+    router.post(`/chatbot-info/${chatbot?.id ?? 1}/deploy`, {}, {
       preserveScroll: true,
-      onSuccess: () => setNotice('Submitted for collegiate approval successfully!'),
-      onFinish: () => setSubmittingApproval(false),
+      onFinish: () => setIsDeploying(false),
     });
   };
 
@@ -60,8 +55,6 @@ export default function Chatbot({ chatbot }) {
           </div>
           <a href="/admin" aria-label="Close" className="shrink-0 text-2xl font-bold leading-none text-gray-400 hover:text-gray-700">&times;</a>
         </header>
-
-        {notice && <p className="mx-6 mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800" role="status">{notice}</p>}
 
         <form onSubmit={updateChatbot} className="space-y-5 p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -125,10 +118,10 @@ export default function Chatbot({ chatbot }) {
 
         <footer className="flex items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-6 py-3">
           <p className="text-xs font-medium text-gray-600">
-            Current Workflow Status: <span className={`ml-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase ${chatbot?.status === 'submitted' ? 'bg-amber-100 text-amber-800' : 'bg-gray-200 text-gray-700'}`}>{chatbot?.status ?? 'pending'}</span>
+            Deployment Status: <span className={`ml-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase ${chatbot?.status === 'deployed' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-700'}`}>{chatbot?.status ?? 'not deployed'}</span>
           </p>
-          <button type="button" onClick={submitForApproval} disabled={submittingApproval} className="shrink-0 rounded-md bg-emerald-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">
-            {submittingApproval ? 'Submitting...' : 'Submit For Approval'}
+          <button type="button" onClick={deployBot} disabled={isDeploying} className="shrink-0 rounded-md bg-emerald-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">
+            {isDeploying ? 'Deploying...' : 'Deploy Bot'}
           </button>
         </footer>
       </section>
