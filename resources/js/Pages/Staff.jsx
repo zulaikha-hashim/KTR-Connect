@@ -427,11 +427,11 @@ export default function Staff({ applications = [] }) {
                 </section>
 
                 <section className="space-y-space-md">
-                  <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Proposal Document (Optional)</h3>
+                  <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Proposal Document</h3>
                   <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low p-space-lg text-center transition-colors hover:bg-surface-container">
                     <span className="material-symbols-outlined mb-2 text-[28px] text-primary">cloud_upload</span>
                     <span className="font-label-md text-label-md font-semibold text-on-surface">Choose a proposal PDF</span>
-                    <span className="font-body-sm text-body-sm text-secondary">PDF only, maximum 10 MB</span>
+                    <span className="font-body-sm text-body-sm text-secondary">PDF required to submit; optional for drafts, maximum 10 MB</span>
                     <input className="sr-only" type="file" accept="application/pdf,.pdf" onChange={(event) => form.setData('proposal_document', event.target.files?.[0] || null)} />
                   </label>
                   {form.data.proposal_document && (
