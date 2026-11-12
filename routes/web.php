@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\ActivityApplicationController;
-use App\Http\Controllers\Admin\HostelInventoryController;
-use App\Http\Controllers\Admin\HostelAvailabilityController;
+use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
+use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
+use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
 
 use App\Models\ActivityApplication;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,10 @@ Route::get('/admin/activity-applications/{application}/document', [ActivityAppli
 
 Route::get('/admin/hostel/rooms', [HostelInventoryController::class, 'index'])
     ->name('admin.hostel.rooms.index');
+
+Route::get(
+    '/admin/hostel/activity-history', [HostelActivityHistoryController::class, 'index']
+)->name('admin.hostel.activity-history.index');
 
 Route::post(
     '/admin/hostel/beds/{bed}/restrictions',

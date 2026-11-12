@@ -21,6 +21,11 @@ const navigation = [
         path: 'admin-hostel-rooms',
         href: '/admin/hostel/rooms',
         active: true,
+      },{
+        label: 'Activity History',
+        icon: 'history',
+        path: 'admin-hostel-activity-history',
+        href: '/admin/hostel/activity-history',
       },
     ],
   },
@@ -162,6 +167,11 @@ export default function AdminInventory({
     (bed) => bed.availability_status === 'unavailable'
   ).length;
 
+  const occupancyPercentage =
+    selectedSession && visibleBeds > 0
+      ? ((occupiedBeds / visibleBeds) * 100).toFixed(1)
+      : null;
+
   function clearFilters() {
     setSearch('');
     setZone('all');
@@ -288,6 +298,33 @@ export default function AdminInventory({
               </p>
             </div>
           ))}
+        </section>
+
+        <section
+          aria-label="Occupancy summary"
+          className="mb-6 rounded-xl border border-slate-200 bg-white p-5"
+        >
+          <p className="text-sm font-medium text-slate-600">
+            Occupancy of displayed rooms
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-[#7A1C2D]">
+            {occupancyPercentage === null
+              ? '—'
+              : `${occupancyPercentage}%`}
+          </p>
+
+          <p className="mt-2 text-sm text-slate-600">
+            {selectedSession
+              ? `${occupiedBeds} confirmed occupied beds out of ${visibleBeds} total beds in the displayed rooms.`
+              : 'Select an academic session to assess occupancy.'}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Includes all beds in displayed rooms. Held and unavailable beds
+            are included in total capacity but are not counted as occupied.
+            Clear filters to view the full loaded inventory.
+          </p>
         </section>
 
         <section
