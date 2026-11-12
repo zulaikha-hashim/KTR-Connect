@@ -188,7 +188,7 @@ export default function RoomDetailsDialog({ room, onClose }) {
                       </p>
 
                       <BedStatusBadge
-                        status={bed.reservation?.status}
+                        status={bed.availability_status}
                         restrictions={bed.restrictions || []}
                       />
                     </div>

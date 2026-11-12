@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityApplicationController;
 use App\Http\Controllers\Admin\HostelInventoryController;
+use App\Http\Controllers\Admin\HostelAvailabilityController;
 
 use App\Models\ActivityApplication;
 use Illuminate\Support\Facades\Route;
@@ -39,3 +40,13 @@ Route::get('/admin/activity-applications/{application}/document', [ActivityAppli
 
 Route::get('/admin/hostel/rooms', [HostelInventoryController::class, 'index'])
     ->name('admin.hostel.rooms.index');
+
+Route::post(
+    '/admin/hostel/beds/{bed}/restrictions',
+    [HostelAvailabilityController::class, 'store']
+)->name('admin.hostel.beds.restrictions.store');
+
+Route::patch(
+    '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
+    [HostelAvailabilityController::class, 'restore']
+)->name('admin.hostel.beds.restrictions.restore');

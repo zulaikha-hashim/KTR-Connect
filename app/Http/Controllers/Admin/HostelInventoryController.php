@@ -108,12 +108,25 @@ class HostelInventoryController extends Controller
                     'residential_zone' => $room->block->residential_zone,
                 ],
                 'beds' => $room->beds
-                    ->map(function ($bed) {
+                    ->map(function ($bed) use ($selectedSessionId) {
                         $reservation = $bed->reservations->first();
+
+                        if ($selectedSessionId === null) {
+                            $availabilityStatus = 'not_assessed';
+                        } elseif ($reservation?->status === 'confirmed') {
+                            $availabilityStatus = 'occupied';
+                        } elseif ($reservation?->status === 'held') {
+                            $availabilityStatus = 'held';
+                        } elseif ($bed->restrictions->isNotEmpty()) {
+                            $availabilityStatus = 'unavailable';
+                        } else {
+                            $availabilityStatus = 'available';
+                        }
 
                         return [
                             'id' => $bed->id,
                             'label' => $bed->label,
+                            'availability_status' => $availabilityStatus,
 
                             'restrictions' => $bed->restrictions
                                 ->map(fn ($restriction) => [
