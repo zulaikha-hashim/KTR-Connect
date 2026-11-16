@@ -78,6 +78,10 @@ Route::get(
     '/admin/hostel/activity-history', [HostelActivityHistoryController::class, 'index']
 )->name('admin.hostel.activity-history.index');
 
+Route::get('/admin/bus-schedule', function () {
+    return inertia('BusSchedule');
+})->name('admin.bus-schedule');
+
 Route::post(
     '/admin/hostel/beds/{bed}/restrictions',
     [HostelAvailabilityController::class, 'store']
