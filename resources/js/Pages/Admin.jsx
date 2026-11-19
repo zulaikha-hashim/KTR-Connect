@@ -129,7 +129,7 @@ function Icon({ children, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
 }
 
-export default function Admin({ applications: submittedApplications = [], chatbot = null, showChatbot = false, successMessage = null }) {
+export default function Admin({ applications: submittedApplications = [], chatbot = null, chatbotLogs = [], showChatbot = false, successMessage = null }) {
   const applications = useMemo(
     () => submittedApplications.map(toReviewApplication),
     [submittedApplications],
@@ -255,6 +255,10 @@ export default function Admin({ applications: submittedApplications = [], chatbo
       profile={adminProfile}
       sessionLabel="Academic Session: Sem 1, 2026/2027"
     >
+      {showChatbot ? (
+        <Chatbot chatbot={chatbot} chatbotLogs={chatbotLogs} successMessage={successMessage} />
+      ) : (
+        <>
       <div className="mx-auto w-full max-w-[1800px] pb-space-xl">
         {toast && (
           <div
@@ -763,7 +767,8 @@ export default function Admin({ applications: submittedApplications = [], chatbo
           </form>
         </div>
       )}
-      {showChatbot && <Chatbot chatbot={chatbot} />}
+        </>
+      )}
     </AppLayout>
   );
 }
