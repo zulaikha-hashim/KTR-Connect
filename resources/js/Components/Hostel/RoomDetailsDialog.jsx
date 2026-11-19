@@ -124,7 +124,7 @@ export default function RoomDetailsDialog({ room, onClose }) {
                     measurement(room.ceiling_height_m, 'm'),
                   ],
                   [
-                    'Residential zone',
+                    'Designated gender',
                     room.block.residential_zone === 'male'
                       ? 'Male'
                       : 'Female',

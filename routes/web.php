@@ -5,6 +5,8 @@ use App\Http\Controllers\ChatbotInfoController;
 use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
+use App\Http\Controllers\Admin\Hostel\MockStudentSimulationController;
+use App\Http\Controllers\Admin\Hostel\MockStudentAllocationController;
 
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
@@ -70,6 +72,9 @@ Route::get('/chatbot-ui', function () {
 Route::get('/admin/support', function () {
     return inertia('AdminSupport');
 });
+
+// Hostel Management Routes
+
 Route::get('/admin/hostel/rooms', [HostelInventoryController::class, 'index'])
     ->name('admin.hostel.rooms.index');
 
@@ -86,3 +91,25 @@ Route::patch(
     '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
     [HostelAvailabilityController::class, 'restore']
 )->name('admin.hostel.beds.restrictions.restore');
+
+//SIMULATION ROUTES
+
+Route::get(
+    '/admin/hostel/simulation/students',
+    [MockStudentSimulationController::class, 'index']
+)->name('admin.hostel.simulation.students.index');
+
+Route::post(
+    '/admin/hostel/simulation/students/import',
+    [MockStudentSimulationController::class, 'importStudents']
+)->name('admin.hostel.simulation.students.import');
+
+Route::get(
+    '/admin/hostel/simulation/allocations',
+    [MockStudentAllocationController::class, 'index']
+)->name('admin.hostel.simulation.allocations.index');
+
+Route::post(
+    '/admin/hostel/simulation/allocations',
+    [MockStudentAllocationController::class, 'store']
+)->name('admin.hostel.simulation.allocations.store');

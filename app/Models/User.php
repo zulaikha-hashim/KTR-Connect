@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -50,5 +51,10 @@ class User extends Authenticatable
     public function activityApplications(): HasMany
     {
         return $this->hasMany(ActivityApplication::class, 'felo_id');
+    }
+
+    public function hostelStudentProfile(): HasOne
+    {
+        return $this->hasOne(HostelStudentProfile::class);
     }
 }

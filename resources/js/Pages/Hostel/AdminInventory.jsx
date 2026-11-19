@@ -345,7 +345,7 @@ export default function AdminInventory({
             </label>
 
             <FilterSelect
-              label="Residential zone"
+              label="Designated gender"
               value={zone}
               onChange={setZone}
               options={[

@@ -70,6 +70,18 @@ const sharedNavigation = [
         path: 'admin-hostel-activity-history',
         href: '/admin/hostel/activity-history',
       },
+      {
+        label: 'Student Data Simulation',
+        icon: 'science',
+        path: 'admin-hostel-student-data-simulation',
+        href: '/admin/hostel/simulation/students',
+      },
+      {
+        label: 'Allocation Simulation',
+        icon: 'science',
+        path: 'admin-hostel-allocation-simulation',
+        href: '/admin/hostel/simulation/allocations',
+      },
     ],
   },
 ];

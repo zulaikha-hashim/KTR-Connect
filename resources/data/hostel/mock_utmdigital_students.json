@@ -1,0 +1,42 @@
+{
+  "source": "mock_utmdigital",
+  "description": "Fictional student records for the KTR-Connect demonstration. Not connected to UTMDigital.",
+  "students": [
+    {
+      "matric_number": "SIM0001",
+      "full_name": "Adam Faris",
+      "faculty": "Computing",
+      "gender": "male"
+    },
+    {
+      "matric_number": "SIM0002",
+      "full_name": "Hakim Zafran",
+      "faculty": "Civil Engineering",
+      "gender": "male"
+    },
+    {
+      "matric_number": "SIM0003",
+      "full_name": "Daniel Harith",
+      "faculty": "Science",
+      "gender": "male"
+    },
+    {
+      "matric_number": "SIM0004",
+      "full_name": "Aina Sofea",
+      "faculty": "Computing",
+      "gender": "female"
+    },
+    {
+      "matric_number": "SIM0005",
+      "full_name": "Nur Alya",
+      "faculty": "Mechanical Engineering",
+      "gender": "female"
+    },
+    {
+      "matric_number": "SIM0006",
+      "full_name": "Sara Humaira",
+      "faculty": "Science",
+      "gender": "female"
+    }
+  ]
+}
