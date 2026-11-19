@@ -6,6 +6,7 @@ use App\Http\Controllers\ChatbotInfoController;
 use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
+use App\Http\Controllers\Staff\MeritTypeController;
 use App\Http\Controllers\PicDirectoryController;
 
 use App\Models\ActivityApplication;
@@ -31,6 +32,13 @@ Route::get('/', function (Request $request) {
             ->get(),
     ]);
 })->name('staff');
+
+Route::prefix('staff/merit-types')->group(function () {
+    Route::get('/', [MeritTypeController::class, 'index'])->name('staff.merit-types.index');
+    Route::post('/', [MeritTypeController::class, 'store'])->name('staff.merit-types.store');
+    Route::put('/{meritType}', [MeritTypeController::class, 'update'])->name('staff.merit-types.update');
+    Route::delete('/{meritType}', [MeritTypeController::class, 'destroy'])->name('staff.merit-types.destroy');
+});
 
 
 // =====================================================
