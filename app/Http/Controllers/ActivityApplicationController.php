@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ActivityApplicationSubmitted;
 use App\Models\ActivityApplication;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -41,13 +43,18 @@ class ActivityApplicationController extends Controller
                 Rule::in(['standard', 'high_impact', 'trainer_special']),
             ],
             'merit_notes' => ['nullable', 'string', 'max:2000'],
-            'proposal_document' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'proposal_document' => $isSubmission
+                ? ['required', 'file', 'mimes:pdf', 'max:10240']
+                : ['nullable', 'file', 'mimes:pdf', 'max:10240'],
         ]);
 
         $document = $validated['proposal_document'] ?? null;
         unset($validated['proposal_document']);
 
-        $application = ActivityApplication::create($validated);
+        $application = ActivityApplication::create([
+            ...$validated,
+            'felo_id' => $request->user()?->getAuthIdentifier(),
+        ]);
 
         if ($document !== null) {
             $path = $document->store('activity-proposals', 'local');
@@ -57,6 +64,10 @@ class ActivityApplicationController extends Controller
             }
 
             $application->update(['proposal_document_path' => $path]);
+        }
+
+        if ($application->status === 'pending' && config('mail.admin_address')) {
+            Mail::to(config('mail.admin_address'))->send(new ActivityApplicationSubmitted($application));
         }
 
         return back()->with(
@@ -71,7 +82,7 @@ class ActivityApplicationController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
-            'review_notes' => ['required_if:status,rejected', 'nullable', 'string', 'min:20', 'max:400'],
+            'review_notes' => ['required_if:status,rejected', 'nullable', 'string', 'max:400'],
         ]);
 
         $updated = ActivityApplication::query()
