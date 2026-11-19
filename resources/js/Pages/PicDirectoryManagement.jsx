@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import AppLayout from '../Components/AppLayout';
 
 const navigationSections = [
@@ -46,9 +46,14 @@ const emptyForm = {
   contact_number: '',
   email: '',
   role: '',
+  academic_session_ids: [],
 };
 
-export default function PicDirectoryManagement({ personnel = [] }) {
+export default function PicDirectoryManagement({
+  personnel = [],
+  sessions = [],
+  selectedSession = 'all',
+}) {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -66,6 +71,20 @@ export default function PicDirectoryManagement({ personnel = [] }) {
     progress,
   } = useForm(emptyForm);
 
+  const currentSession = sessions.find((session) => session.is_current);
+  const selectedSessionInfo = sessions.find(
+    (session) => String(session.id) === String(selectedSession)
+  );
+
+  const changeSession = (event) => {
+    setNotice('');
+    setSearch('');
+    router.get('/admin/pic-directory', { session: event.target.value }, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
   const filteredPersonnel = personnel.filter((person) =>
     `${person.name} ${person.email} ${person.role}`
       .toLowerCase()
@@ -80,7 +99,10 @@ export default function PicDirectoryManagement({ personnel = [] }) {
   };
 
   const openAdd = () => {
-    reset();
+    setData({
+      ...emptyForm,
+      academic_session_ids: currentSession ? [Number(currentSession.id)] : [],
+    });
     clearErrors();
     setSelectedPerson(null);
     setModal('add');
@@ -97,6 +119,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
       contact_number: person.contact_number,
       email: person.email,
       role: person.role,
+      academic_session_ids: (person.academic_session_ids ?? []).map(Number),
     });
 
     setModal('edit');
@@ -149,7 +172,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
       navigationSections={navigationSections}
       roles={roles}
       profile={profile}
-      sessionLabel="Academic Session: Sem 1, 2026/2027"
+      sessionLabel={`Academic Session: ${currentSession?.name ?? 'Not configured'}`} 
     >
       <div className="mx-auto w-full max-w-[1500px] pb-space-xl">
 
@@ -189,9 +212,36 @@ export default function PicDirectoryManagement({ personnel = [] }) {
 
         <section className="mt-6 rounded-xl bg-surface-container-lowest p-6 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-headline-sm font-bold text-on-surface">
-              Personnel Directory ({personnel.length})
-            </h2>
+            <div>
+              <h2 className="font-headline-sm font-bold text-on-surface">
+                Personnel Directory ({personnel.length})
+              </h2>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                {selectedSession === 'all'
+                  ? 'Showing staff across all academic sessions'
+                  : `Showing ${selectedSessionInfo?.name ?? 'selected session'} PICs`}
+              </p>
+            </div>
+
+            <div className="flex w-full flex-wrap items-end gap-3 md:w-auto">
+              <div className="min-w-[210px] flex-1 md:flex-none">
+                <label htmlFor="directory-session" className="mb-1 block text-sm font-semibold text-on-surface">
+                  Academic Session
+                </label>
+                <select
+                  id="directory-session"
+                  value={String(selectedSession)}
+                  onChange={changeSession}
+                  className="w-full rounded-lg border border-surface-container bg-surface-container-low p-3 text-on-surface"
+                >
+                  <option value="all">All Sessions</option>
+                  {sessions.map((session) => (
+                    <option key={session.id} value={String(session.id)}>
+                      {session.name}{session.is_current ? ' (Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
             <input
               type="search"
@@ -200,6 +250,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full max-w-sm rounded-lg border border-surface-container bg-surface-container-low p-3 text-on-surface"
             />
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -209,6 +260,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
                   <th className="p-4">Personnel</th>
                   <th className="p-4">Contact</th>
                   <th className="p-4">Role</th>
+                  <th className="p-4">Academic Sessions</th>
                   <th className="p-4">Actions</th>
                 </tr>
               </thead>
@@ -239,6 +291,12 @@ export default function PicDirectoryManagement({ personnel = [] }) {
 
                     <td className="p-4 text-on-surface">
                       {person.role}
+                    </td>
+
+                    <td className="p-4 text-sm text-on-surface-variant">
+                      {(person.academic_sessions ?? []).length > 0
+                        ? person.academic_sessions.map((session) => session.name).join(', ')
+                        : 'Not assigned'}
                     </td>
 
                     <td className="p-4">
@@ -314,6 +372,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
                     Leave empty to keep the current photo.
                   </p>
                 )}
+                <p className="mt-1 text-xs text-secondary">Maximum file size: 5 MB.</p>
                 {errors.photo && (
                   <p className="text-sm text-red-600">{errors.photo}</p>
                 )}
@@ -374,6 +433,50 @@ export default function PicDirectoryManagement({ personnel = [] }) {
                 )}
               </div>
 
+              <fieldset className="rounded-lg border border-surface-container p-4">
+                <legend className="px-1 font-semibold text-on-surface">
+                  Academic Sessions
+                </legend>
+                <p className="mb-3 text-sm text-on-surface-variant">
+                  Select every session this PIC serves in.
+                </p>
+                {sessions.length === 0 ? (
+                  <p className="text-sm text-red-600">
+                    No academic sessions found. Run your academic session seeder first.
+                  </p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {sessions.map((session) => (
+                      <label key={session.id} className="flex items-center gap-2 text-on-surface">
+                        <input
+                          type="checkbox"
+                          checked={data.academic_session_ids.includes(Number(session.id))}
+                          onChange={(event) => {
+                            const id = Number(session.id);
+                            const updated = event.target.checked
+                              ? [...data.academic_session_ids, id]
+                              : data.academic_session_ids.filter((value) => value !== id);
+                            setData('academic_session_ids', updated);
+                          }}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span>
+                          {session.name}{session.is_current ? ' (Current)' : ''}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {errors.academic_session_ids && (
+                  <p className="mt-2 text-sm text-red-600">{errors.academic_session_ids}</p>
+                )}
+                {Object.entries(errors)
+                  .filter(([key]) => key.startsWith('academic_session_ids.'))
+                  .map(([key, message]) => (
+                    <p key={key} className="mt-1 text-sm text-red-600">{message}</p>
+                  ))}
+              </fieldset>
+
               {progress && (
                 <p className="text-sm text-secondary">
                   Uploading: {progress.percentage}%
@@ -392,7 +495,7 @@ export default function PicDirectoryManagement({ personnel = [] }) {
 
                 <button
                   type="submit"
-                  disabled={processing}
+                  disabled={processing || data.academic_session_ids.length === 0}
                   className="rounded-lg bg-primary px-5 py-2 font-semibold text-on-primary disabled:opacity-50"
                 >
                   {processing ? 'Saving...' : 'Save PIC'}

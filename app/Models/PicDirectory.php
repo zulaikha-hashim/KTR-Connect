@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class PicDirectory extends Model
 {
@@ -15,4 +16,15 @@ class PicDirectory extends Model
         'email',
         'role',
     ];
+
+    public function academicSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AcademicSession::class,
+            'pic_directory_academic_session',
+            'pic_directory_id',
+            'academic_session_id'
+        )->withTimestamps();
+    }
+
 }
