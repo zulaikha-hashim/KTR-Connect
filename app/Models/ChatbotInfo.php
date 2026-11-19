@@ -16,7 +16,15 @@ class ChatbotInfo extends Model
         'title',
         'keywords',
         'content',
+        'faqs',
         'admin_id',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'faqs' => 'array',
+        ];
+    }
 }
