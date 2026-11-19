@@ -118,16 +118,28 @@ export default function AppLayout({
 }) {
   const { url } = usePage();
   const currentPath = url.split(/[?#]/)[0];
+  const currentQuery = url.split('?')[1]?.split('#')[0] ?? '';
 
-  const sections = mergeNavigation(navigationSections).map(
+  const navigation = mergeNavigation(navigationSections);
+  const matchingItems = navigation.flatMap((section) =>
+    section.items.filter((item) => {
+      if (typeof item.href !== 'string' || !item.href.startsWith('/')) {
+        return false;
+      }
+
+      const [path, query = ''] = item.href.split('?');
+      return path === currentPath && query.split('#')[0] === currentQuery;
+    })
+  );
+  const activeItem =
+    matchingItems.find((item) => item.active) ?? matchingItems[0];
+
+  const sections = navigation.map(
     (section) => ({
       ...section,
       items: section.items.map((item) => ({
         ...item,
-        active:
-          typeof item.href === 'string'
-          && item.href.startsWith('/')
-          && item.href.split(/[?#]/)[0] === currentPath,
+        active: item === activeItem,
       })),
     })
   );
