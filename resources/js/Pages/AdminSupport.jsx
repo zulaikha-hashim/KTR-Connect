@@ -25,6 +25,26 @@ export default function AdminSupport() {
                 },
             ],
         },
+        {
+        title: 'MASTER DATA MANAGEMENT',
+        items: [
+            {
+                label: 'Roles Management',
+                icon: 'badge',
+                href: '#',
+            },
+            {
+                label: 'Status Management',
+                icon: 'toggle_on',
+                href: '#',
+            },
+            {
+                label: 'Merit Management',
+                icon: 'military_tech',
+                href: '/admin/master-data/merit',
+            },
+        ],
+    },
     ];
 
     const adminProfile = {

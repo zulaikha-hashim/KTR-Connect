@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\ActivityApplicationController;
@@ -7,7 +6,6 @@ use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
 use App\Http\Controllers\PicDirectoryController;
-
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
 
@@ -193,3 +191,26 @@ Route::patch(
     '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
     [HostelAvailabilityController::class, 'restore']
 )->name('admin.hostel.beds.restrictions.restore');
+
+
+// =====================================================
+//                  MERIT TYPE MANAGEMENT
+// =====================================================
+Route::prefix('admin/master-data/merit')->name('admin.master-data.merit.')->group(function () {
+    Route::get(
+        '/',
+        [\App\Http\Controllers\Admin\MeritTypeController::class, 'index']
+    )->name('index');
+    Route::post(
+        '/',
+        [\App\Http\Controllers\Admin\MeritTypeController::class, 'store']
+    )->name('store');
+    Route::put(
+        '/{meritType}',
+        [\App\Http\Controllers\Admin\MeritTypeController::class, 'update']
+    )->name('update');
+    Route::delete(
+        '/{meritType}',
+        [\App\Http\Controllers\Admin\MeritTypeController::class, 'destroy']
+    )->name('destroy');
+});
