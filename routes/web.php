@@ -186,9 +186,17 @@ Route::get(
  // BUS SCHEDULE MANAGEMENT
  // =====================================================
 
- Route::get('/admin/bus-schedule', function () {
-     return Inertia::render('BusSchedule');
- })->name('admin.bus-schedule');
+ // Display bus schedules by academic session
+Route::get(
+    '/admin/bus-schedule',
+    [BusScheduleController::class, 'index']
+)->name('admin.bus-schedule');
+
+ // Upload or replace a bus schedule
+Route::post(
+    '/admin/bus-schedule',
+    [BusScheduleController::class, 'store']
+)->name('admin.bus-schedule.store');
 
  // =====================================================
  // HOSTEL BED RESTRICTIONS
