@@ -13,6 +13,12 @@ const navigationSections = [
         href: '/admin',
       },
       {
+        label: 'PIC Directory Management',
+        icon: 'contacts',
+        path: 'pic-directory-management',
+        href: '/admin/pic-directory',
+      },
+      {
         label: 'Upload / Update Bus Schedule',
         icon: 'upload_file',
         path: 'bus-schedule',
