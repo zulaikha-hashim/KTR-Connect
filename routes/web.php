@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\ActivityApplicationController;
@@ -14,6 +13,7 @@ use App\Models\ChatbotInfo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\BusScheduleController;
 
 // =====================================================
 // STAFF HOMEPAGE
@@ -182,14 +182,34 @@ Route::get(
     [HostelActivityHistoryController::class, 'index']
 )->name('admin.hostel.activity-history.index');
 
-// Store Bed Restrictions
-Route::post(
-    '/admin/hostel/beds/{bed}/restrictions',
-    [HostelAvailabilityController::class, 'store']
-)->name('admin.hostel.beds.restrictions.store');
+ // =====================================================
+ // BUS SCHEDULE MANAGEMENT
+ // =====================================================
 
-// Restore Bed Restrictions
-Route::patch(
-    '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
-    [HostelAvailabilityController::class, 'restore']
-)->name('admin.hostel.beds.restrictions.restore');
+ // Display bus schedules by academic session
+Route::get(
+    '/admin/bus-schedule',
+    [BusScheduleController::class, 'index']
+)->name('admin.bus-schedule');
+
+ // Upload or replace a bus schedule
+Route::post(
+    '/admin/bus-schedule',
+    [BusScheduleController::class, 'store']
+)->name('admin.bus-schedule.store');
+
+ // =====================================================
+ // HOSTEL BED RESTRICTIONS
+ // =====================================================
+
+ // Store Bed Restrictions
+ Route::post(
+     '/admin/hostel/beds/{bed}/restrictions',
+     [HostelAvailabilityController::class, 'store']
+ )->name('admin.hostel.beds.restrictions.store');
+
+ // Restore Bed Restrictions
+ Route::patch(
+     '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
+     [HostelAvailabilityController::class, 'restore']
+ )->name('admin.hostel.beds.restrictions.restore');
