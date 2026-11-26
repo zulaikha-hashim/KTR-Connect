@@ -24,6 +24,14 @@ const staffNavigation = [
       { label: 'Activity Review & Approvals', icon: 'fact_check', path: 'activity-reviews-and-approvals', href: '/admin' },
     ],
   },
+  {
+    title: 'Master Data Management',
+    items: [
+      { label: 'Roles Management', icon: 'badge', href: '#' },
+      { label: 'Status Management', icon: 'toggle_on', href: '#' },
+      { label: 'Merit Management', icon: 'military_tech', href: '/admin/master-data/merit' },
+    ],
+  },
 ];
 
 const staffProfile = {
