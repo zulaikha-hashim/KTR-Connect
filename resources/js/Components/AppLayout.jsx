@@ -1,3 +1,4 @@
+
 import { usePage } from '@inertiajs/react';
 import '../../css/AppLayout.css';
 import AppSidebar from './AppSidebar';
@@ -92,38 +93,87 @@ const sharedNavigation = [
   },
 ];
 
+// Merge shared navigation with page-specific navigation
+function mergeNavigation(pageSections = []) {
+  const merged = [];
+  const existingItems = new Map();
+
+  for (const section of [...sharedNavigation, ...pageSections]) {
+    let group = merged.find(
+      (item) => item.title === section.title
+    );
+
+    if (!group) {
+      group = {
+        title: section.title,
+        items: [],
+      };
+
+      merged.push(group);
+    }
+
+    for (const item of section.items) {
+      const key = item.path || item.label;
+
+      if (existingItems.has(key)) {
+        // Keep page-specific link details without duplication
+        Object.assign(existingItems.get(key), item);
+      } else {
+        const copy = { ...item };
+
+        group.items.push(copy);
+        existingItems.set(key, copy);
+      }
+    }
+  }
+
+  return merged.filter(
+    (section) => section.items.length > 0
+  );
+}
+
 export default function AppLayout({
   children,
+  navigationSections = [],
   profile,
   sessionLabel,
 }) {
   const { url } = usePage();
+
   const currentPath = url.split(/[?#]/)[0];
   const currentQuery = url.split('?')[1]?.split('#')[0] ?? '';
 
   const navigation = mergeNavigation(navigationSections);
+
   const matchingItems = navigation.flatMap((section) =>
     section.items.filter((item) => {
-      if (typeof item.href !== 'string' || !item.href.startsWith('/')) {
+      if (
+        typeof item.href !== 'string' ||
+        !item.href.startsWith('/')
+      ) {
         return false;
       }
 
       const [path, query = ''] = item.href.split('?');
-      return path === currentPath && query.split('#')[0] === currentQuery;
-    })
-  );
-  const activeItem =
-    matchingItems.find((item) => item.active) ?? matchingItems[0];
 
-  const sections = navigation.map(
-    (section) => ({
-      ...section,
-      items: section.items.map((item) => ({
-        ...item,
-        active: item === activeItem,
-      })),
+      return (
+        path === currentPath &&
+        query.split('#')[0] === currentQuery
+      );
     })
   );
+
+  const activeItem =
+    matchingItems.find((item) => item.active) ??
+    matchingItems[0];
+
+  const sections = navigation.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({
+      ...item,
+      active: item === activeItem,
+    })),
+  }));
 
   return (
     <div className="app-layout bg-background font-body-md text-on-surface antialiased">
@@ -141,7 +191,10 @@ export default function AppLayout({
 
         <footer className="border-t border-surface-container bg-surface-container-lowest px-gutter py-space-md">
           <div className="flex flex-col items-center justify-between gap-space-xs font-body-sm text-body-sm text-secondary sm:flex-row">
-            <p>© {new Date().getFullYear()} Kolej Tun Razak, Universiti Teknologi Malaysia.</p>
+            <p>
+              © {new Date().getFullYear()} Kolej Tun Razak,
+              Universiti Teknologi Malaysia.
+            </p>
             <p>UTM Skudai Campus</p>
           </div>
         </footer>
