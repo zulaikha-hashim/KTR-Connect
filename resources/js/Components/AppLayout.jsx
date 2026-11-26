@@ -14,6 +14,11 @@ const sharedNavigation = [
         href: '#',
       },
       {
+        label: 'View Merit',
+        icon: 'verified',
+        href: '/student/merit',
+      },
+      {
         label: 'Activity Directory & Details',
         icon: 'event_available',
         path: 'student-activity-directory',

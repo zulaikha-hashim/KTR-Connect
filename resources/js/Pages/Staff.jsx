@@ -6,7 +6,7 @@ const staffNavigation = [
   {
     title: 'Student Resident',
     items: [
-      { label: 'Merit & Room Eligibility', icon: 'verified', path: 'student-merit-and-room-eligibility', href: '#' },
+      { label: 'Merit & Room Eligibility', icon: 'verified', path: 'student-merit-and-room-eligibility', href: '/student/merit' },
       { label: 'Activity Directory & Details', icon: 'event_available', path: 'student-activity-directory', href: '#' },
     ],
   },

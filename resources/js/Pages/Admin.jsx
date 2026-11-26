@@ -22,7 +22,12 @@ const adminNavigation = [
         label: 'Merit & Room Eligibility',
         icon: 'verified',
         path: 'student-merit-and-room-eligibility',
-        href: '#',
+        href: '/student/merit',
+      },
+      {
+        label: 'View Merit',
+        icon: 'verified',
+        href: '/student/merit',
       },
       {
         label: 'Activity Directory & Details',

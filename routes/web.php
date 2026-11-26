@@ -251,3 +251,6 @@ Route::prefix('admin/master-data/merit')->name('admin.master-data.merit.')->grou
         [\App\Http\Controllers\Admin\MeritTypeController::class, 'destroy']
     )->name('destroy');
 });
+
+// STUDENT CAN VIEW MERIT
+Route::get('/student/merit', fn () => \Inertia\Inertia::render('Student/ViewMerit'))->name('student.merit');
