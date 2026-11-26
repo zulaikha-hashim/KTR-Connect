@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
 use App\Http\Controllers\PicDirectoryController;
-
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
 use App\Models\ChatbotInfoLog;
@@ -225,6 +224,11 @@ Route::post(
      [HostelAvailabilityController::class, 'store']
  )->name('admin.hostel.beds.restrictions.store');
 
+
+ // =====================================================
+ // HOSTEL BED RESTRICTIONS
+ // =====================================================
+
  // Restore Bed Restrictions
  Route::patch(
      '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
@@ -253,8 +257,7 @@ Route::post(
  )->whereIn('type', ['participation', 'committee'])
   ->name('staff.participation.update');
 
-
- // Delete one participation or committee record
+ // Delete an individual record
  Route::delete(
      '/staff/participation-records/{type}/{record}',
      [StudentParticipationController::class, 'destroy']
@@ -262,15 +265,47 @@ Route::post(
   ->whereNumber('record')
   ->name('staff.participation.destroy');
 
- // Delete all participation or committee records
+ // Delete all records for a selected category
  Route::delete(
      '/staff/participation-records/{type}',
      [StudentParticipationController::class, 'destroyAll']
  )->whereIn('type', ['participation', 'committee'])
   ->name('staff.participation.destroy-all');
 
-Route::delete(
-    '/staff/participation-records/uploads/{batch}',
-    [StudentParticipationController::class, 'destroyBatch']
-)->whereNumber('batch')
- ->name('staff.participation.uploads.destroy');
+ // Delete records from one uploaded file
+ Route::delete(
+     '/staff/participation-records/uploads/{batch}',
+     [StudentParticipationController::class, 'destroyBatch']
+ )->whereNumber('batch')
+  ->name('staff.participation.uploads.destroy');
+
+
+ // =====================================================
+ // MERIT TYPE MANAGEMENT
+ // =====================================================
+
+ Route::prefix('admin/master-data/merit')
+     ->name('admin.master-data.merit.')
+     ->group(function () {
+
+         Route::get(
+             '/',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'index']
+         )->name('index');
+
+         Route::post(
+             '/',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'store']
+         )->name('store');
+
+         Route::put(
+             '/{meritType}',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'update']
+         )->name('update');
+
+         Route::delete(
+             '/{meritType}',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'destroy']
+         )->name('destroy');
+     });
+
