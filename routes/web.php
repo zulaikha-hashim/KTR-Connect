@@ -35,48 +35,8 @@ Route::get('/', function (Request $request) {
     ]);
 })->name('staff');
 
-
-// =====================================================
-// ACTIVITY APPLICATIONS
-// =====================================================
-
-Route::post(
-    '/activity-applications',
-    [ActivityApplicationController::class, 'store']
-)->name('activity-applications.store');
-
-Route::patch(
-    '/admin/activity-applications/{application}',
-    [ActivityApplicationController::class, 'review']
-)->name('admin.activity-applications.review');
-
-Route::get(
-    '/admin/activity-applications/{application}/document',
-    [ActivityApplicationController::class, 'document']
-)->name('admin.activity-applications.document');
-
-
-// =====================================================
-// ADMIN DASHBOARD
-// =====================================================
-
-Route::patch('/activity-applications/{application}', [ActivityApplicationController::class, 'update'])
-    ->name('activity-applications.update');
-Route::get('/activity-applications/{application}/students', [ActivityApplicationController::class, 'students'])
-    ->name('activity-applications.students');
-Route::get('/activity-applications/{application}/students/csv', [ActivityApplicationController::class, 'studentsCsv'])
-    ->name('activity-applications.students.csv');
-
-Route::get('/admin/students/upload', [StudentParticipationUploadController::class, 'create'])
-    ->name('admin.students.upload.create');
-Route::post('/admin/students/upload/preview', [StudentParticipationUploadController::class, 'preview'])
-    ->name('admin.students.upload.preview');
-Route::post('/admin/students/upload', [StudentParticipationUploadController::class, 'store'])
-    ->name('admin.students.upload.store');
-Route::get('/admin/students/upload/rules', [StudentParticipationUploadController::class, 'rules'])
-    ->name('admin.students.upload.rules');
-Route::patch('/admin/students/{participation}', [StudentParticipationUploadController::class, 'update'])
-    ->name('admin.students.update');
+Route::post('/activity-applications', [ActivityApplicationController::class, 'store'])
+    ->name('activity-applications.store');
 
 Route::patch('/activity-applications/{application}', [ActivityApplicationController::class, 'update'])
     ->name('activity-applications.update');
@@ -124,7 +84,11 @@ Route::get('/admin', function () {
         ->get();
 
     $applications = ActivityApplication::query()
-        ->whereIn('status', ['pending', 'approved', 'rejected'])
+        ->whereIn('status', [
+            'pending',
+            'approved',
+            'rejected',
+        ])
         ->with('paperworkDocuments')
         ->latest()
         ->get()
