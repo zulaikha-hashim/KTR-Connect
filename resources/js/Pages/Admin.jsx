@@ -3,93 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../Components/AppLayout';
 import Chatbot from './Chatbot';
 
-const adminNavigation = [
-  {
-    title: 'Hostel Management',
-    items: [
-      {
-        label: 'Room Inventory',
-        icon: 'meeting_room',
-        path: 'admin-hostel-rooms',
-        href: '/admin/hostel/rooms',
-      },
-    ],
-  },
-  {
-    title: 'Student Resident',
-    items: [
-      {
-        label: 'Merit & Room Eligibility',
-        icon: 'verified',
-        path: 'student-merit-and-room-eligibility',
-        href: '#',
-      },
-      {
-        label: 'Activity Directory & Details',
-        icon: 'event_available',
-        path: 'student-activity-directory',
-        href: '#',
-      },
-    ],
-  },
-  {
-    title: 'Felo & Staff Operations',
-    items: [
-      {
-        label: 'Manage Activities & Proposal',
-        icon: 'post_add',
-        path: 'manage-activities-and-proposals',
-        href: '/',
-      },
-      {
-        label: 'Record Participation (CSV/Excel)',
-        icon: 'upload_file',
-        path: 'record-participation-upload',
-        href: '#',
-      },
-      {
-        label: 'Merit Status Reports',
-        icon: 'summarize',
-        path: 'staff-merit-analytics-reports',
-        href: '#',
-      },
-    ],
-  },
-  {
-    title: 'Collegiate Administration',
-    items: [
-      {
-        label: 'Admin Analytics Dashboard',
-        icon: 'dashboard',
-        path: 'collegiate-admin-dashboard',
-        href: '/admin',
-      },
-      {
-        label: 'Activity Review & Approvals',
-        icon: 'fact_check',
-        path: 'activity-reviews-and-approvals',
-        href: '/admin',
-        active: true,
-      },
-      {
-        label: 'Update Chatbot Information',
-        icon: 'smart_toy',
-        path: 'update-chatbot-information',
-        href: '/admin?modal=chatbot',
-      },
-      {
-        label: 'Support & External Links',
-        icon: 'link',
-        path: 'admin-support',
-        href: '/admin/support',
-      },
-    ],
-  },
-];
-
 const adminProfile = {
-  name: 'En. Razak',
-  description: 'Collegiate Administrator',
+  name: 'Admin Name',
+  description: 'Administrator',
 };
 
 const organizationNames = {
@@ -98,12 +14,6 @@ const organizationNames = {
   jkm_cultural: 'JKM Biro Kebudayaan & Kesenian',
   jkm_welfare: 'JKM Biro Kebajikan & Kerohanian',
   felo_office: 'Pejabat Felo Kolej Tun Razak',
-};
-
-const meritTierNames = {
-  standard: 'Standard Tier',
-  high_impact: 'High Impact Collegiate',
-  trainer_special: 'Technical Facilitator Role',
 };
 
 function formatDate(value, options = { dateStyle: 'medium' }) {
@@ -124,15 +34,11 @@ function toReviewApplication(application) {
     ...application,
     reference: `ACT-${year}-${String(application.id).padStart(3, '0')}`,
     title: application.activity_name || 'Untitled draft',
-    description: application.merit_notes || 'No additional merit notes were provided.',
+    directorName: application.director_name || 'Not provided',
     submitted: formatDate(application.created_at),
     dates: `${formatDate(application.start_at, { dateStyle: 'medium', timeStyle: 'short' })} – ${formatDate(application.end_at, { dateStyle: 'medium', timeStyle: 'short' })}`,
-    turnout: application.expected_turnout,
-    committeeQuota: application.committee_quota,
-    participantQuota: application.participant_quota,
-    meritTier: meritTierNames[application.merit_tier] || 'Not specified',
-    submitter: organizationNames[application.organization] || 'Organization not specified',
-    role: 'Proposing organization',
+    submitter: organizationNames[application.organization] || application.organization || 'Organization not specified',
+    role: 'Club Name',
   };
 }
 
@@ -140,7 +46,13 @@ function Icon({ children, className = '' }) {
   return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
 }
 
-export default function Admin({ applications: submittedApplications = [], chatbot = null, chatbotLogs = [], showChatbot = false, successMessage = null }) {
+export default function Admin({
+  applications: submittedApplications = [],
+  chatbot = null,
+  showChatbot = false,
+  successMessage = null,
+  notificationWarning = null,
+}) {
   const applications = useMemo(
     () => submittedApplications.map(toReviewApplication),
     [submittedApplications],
@@ -149,19 +61,36 @@ export default function Admin({ applications: submittedApplications = [], chatbo
   const [activeFilter, setActiveFilter] = useState('pending');
   const [search, setSearch] = useState('');
   const [detailsId, setDetailsId] = useState(null);
-  const [documentId, setDocumentId] = useState(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [deleteId, setDeleteId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [pendingAlertIndex, setPendingAlertIndex] = useState(0);
 
   const selectedApplication = applications.find(({ id }) => id === selectedId);
   const detailsApplication = applications.find(({ id }) => id === detailsId);
-  const documentApplication = applications.find(({ id }) => id === documentId);
-  const pendingCount = applications.filter(({ status }) => status === 'pending').length;
+  const deleteApplication = applications.find(({ id }) => id === deleteId);
+  const pendingApplications = useMemo(
+    () => applications.filter(({ status }) => status === 'pending'),
+    [applications],
+  );
+  const pendingCount = pendingApplications.length;
   const approvedCount = applications.filter(({ status }) => status === 'approved').length;
   const rejectedCount = applications.filter(({ status }) => status === 'rejected').length;
+  const activePendingAlertIndex = pendingCount ? pendingAlertIndex % pendingCount : 0;
+  const pendingAlert = pendingApplications[activePendingAlertIndex];
+
+  const rotatePendingAlert = (direction) => {
+    if (pendingApplications.length < 2) return;
+
+    setPendingAlertIndex((index) => (
+      index + direction + pendingApplications.length
+    ) % pendingApplications.length);
+  };
 
   useEffect(() => {
     if (!applications.some(({ id }) => id === selectedId)) {
@@ -169,14 +98,27 @@ export default function Admin({ applications: submittedApplications = [], chatbo
     }
   }, [applications, selectedId]);
 
+  useEffect(() => {
+    setPendingAlertIndex((index) => (
+      pendingApplications.length ? index % pendingApplications.length : 0
+    ));
+
+    if (pendingApplications.length < 2) return undefined;
+
+    const interval = window.setInterval(() => {
+      setPendingAlertIndex((index) => (index + 1) % pendingApplications.length);
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [pendingApplications.length]);
+
   const visibleApplications = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return applications.filter((application) => {
       const matchesStatus =
         activeFilter === 'all' ||
-        application.status === activeFilter ||
-        (activeFilter === 'high-turnout' && application.expected_turnout > 200);
+        application.status === activeFilter;
       const matchesSearch =
         !query ||
         `${application.reference} ${application.title} ${application.submitter}`
@@ -188,12 +130,12 @@ export default function Admin({ applications: submittedApplications = [], chatbo
   }, [activeFilter, applications, search]);
 
   useEffect(() => {
-    const isModalOpen = isRejectModalOpen || detailsApplication || documentApplication;
+    const isModalOpen = isRejectModalOpen || detailsApplication || deleteApplication;
     document.body.style.overflow = isModalOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isRejectModalOpen, detailsApplication, documentApplication]);
+  }, [isRejectModalOpen, detailsApplication, deleteApplication]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -203,25 +145,27 @@ export default function Admin({ applications: submittedApplications = [], chatbo
   }, [toast]);
 
   useEffect(() => {
-    if (successMessage) {
+    if (notificationWarning) {
+      setToast({ status: 'warning', title: notificationWarning, message: '' });
+    } else if (successMessage) {
       setToast({ status: 'approved', title: successMessage, message: '' });
     }
-  }, [successMessage]);
+  }, [successMessage, notificationWarning]);
 
   useEffect(() => {
-    if (!isRejectModalOpen && !detailsApplication && !documentApplication) return undefined;
+    if (!isRejectModalOpen && !detailsApplication && !deleteApplication) return undefined;
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsRejectModalOpen(false);
         setDetailsId(null);
-        setDocumentId(null);
+        setDeleteId(null);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRejectModalOpen, detailsApplication, documentApplication]);
+  }, [isRejectModalOpen, detailsApplication, deleteApplication]);
 
   const updateApplicationStatus = (status, reviewNotes = '') => {
     if (!selectedApplication) return;
@@ -240,10 +184,8 @@ export default function Admin({ applications: submittedApplications = [], chatbo
         setRejectionReason('');
         setToast({
           status,
-          title: `Application ${selectedApplication.reference} ${status}`,
-          message: status === 'approved'
-            ? 'The approval has been saved.'
-            : 'The rejection and review notes have been saved.',
+          title: status === 'approved' ? 'Application approved' : 'Application rejected',
+          message: `${selectedApplication.title} (${selectedApplication.reference})`,
         });
       },
       onError: (errors) => {
@@ -260,9 +202,31 @@ export default function Admin({ applications: submittedApplications = [], chatbo
     updateApplicationStatus('rejected', rejectionReason.trim());
   };
 
+  const deleteSelectedApplication = () => {
+    if (!deleteApplication) return;
+
+    setDeleteError('');
+    router.delete(`/admin/activity-applications/${deleteApplication.id}`, {
+      preserveScroll: true,
+      onStart: () => setIsDeleting(true),
+      onSuccess: () => {
+        setDeleteId(null);
+        setDetailsId(null);
+        setToast({
+          status: 'approved',
+          title: `${deleteApplication.reference} moved to deleted items`,
+          message: 'The application record and paperwork are retained.',
+        });
+      },
+      onError: (errors) => {
+        setDeleteError(Object.values(errors)[0] || 'The application could not be moved to deleted items.');
+      },
+      onFinish: () => setIsDeleting(false),
+    });
+  };
+
   return (
     <AppLayout
-      navigationSections={adminNavigation}
       profile={adminProfile}
       sessionLabel="Academic Session: Sem 1, 2026/2027"
     >
@@ -274,13 +238,19 @@ export default function Admin({ applications: submittedApplications = [], chatbo
         {toast && (
           <div
             aria-live="polite"
-            className={`mb-space-md flex items-start justify-between gap-space-md rounded-xl p-space-md text-on-tertiary shadow-md ${
-              toast.status === 'rejected' ? 'bg-error text-on-error' : 'bg-tertiary text-on-tertiary'
+            className={`mb-space-md flex items-start justify-between gap-space-md rounded-xl p-space-md shadow-md ${
+              toast.status === 'rejected'
+                ? 'bg-error text-on-error'
+                : toast.status === 'warning'
+                  ? 'bg-amber-100 text-amber-950'
+                  : 'bg-tertiary text-on-tertiary'
             }`}
             role="status"
           >
             <div className="flex items-start gap-space-sm">
-              <Icon className="text-[20px]">check_circle</Icon>
+              <Icon className="text-[20px]">
+                {toast.status === 'rejected' ? 'do_not_disturb_on' : toast.status === 'warning' ? 'warning' : 'check_circle'}
+              </Icon>
               <div>
                 <p className="font-label-lg text-label-lg">{toast.title}</p>
                 {toast.message && <p className="font-body-sm text-body-sm opacity-90">{toast.message}</p>}
@@ -301,20 +271,18 @@ export default function Admin({ applications: submittedApplications = [], chatbo
           <div>
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <span className="font-label-sm text-label-sm font-semibold uppercase tracking-wider text-primary">
-                Residential Collegiate Administration • UC-M008 / US 4.9
-              </span>
-              <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-code text-code text-on-surface-variant">
-                Session 26/27
+                Student's Activity Application Management
               </span>
             </div>
             <h1 className="font-headline-lg text-headline-lg font-bold tracking-tight text-on-surface">
-              Merit Activity Applications &amp; Approvals
+              Student's Activities Applications
             </h1>
+            <p className="mt-1 font-body-md text-body-md text-secondary">New applications will remain pending until reviewed and approved by an administrator</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-on-surface shadow-sm">
-              <span className="font-label-md text-label-md text-secondary">Total Proposals</span>
+              <span className="font-label-md text-label-md text-secondary">Total Paperwork</span>
               <span className="font-headline-sm text-headline-sm font-bold">{applications.length}</span>
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-amber-900 shadow-sm">
@@ -339,57 +307,71 @@ export default function Admin({ applications: submittedApplications = [], chatbo
           </div>
         </section>
 
-        <div className="flex flex-col gap-space-md pt-space-md">
-          {selectedApplication && (
-            <section className="flex flex-col justify-between gap-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-sm sm:flex-row sm:items-center">
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="font-label-sm text-label-sm font-bold uppercase text-secondary">
-                    Document review workspace
-                  </span>
-                  <span className="rounded bg-surface-container px-2 py-0.5 font-code text-code">
-                    {selectedApplication.has_proposal_document ? 'Uploaded proposal' : 'Application details'}
-                  </span>
+        {pendingAlert && (
+          <section
+            aria-live="polite"
+            className="mt-space-md flex items-center gap-space-md rounded-xl border border-amber-200 bg-amber-50 p-space-md shadow-sm"
+            role="status"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+              <Icon>notifications_active</Icon>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-label-sm text-label-sm font-semibold uppercase tracking-wide text-amber-800">
+                New applications awaiting review · {pendingCount} pending
+              </p>
+              <div
+                className="pending-alert-slide-up flex min-h-12 items-center justify-between gap-space-sm"
+                key={pendingAlert.id}
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-label-lg text-label-lg font-semibold text-on-surface">
+                    {pendingAlert.title}
+                  </p>
+                  <p className="truncate font-body-sm text-body-sm text-secondary">
+                    {pendingAlert.submitter} · {pendingAlert.reference} · Submitted {pendingAlert.submitted}
+                  </p>
                 </div>
-                <h2 className="truncate font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {selectedApplication.title}
-                </h2>
+                <button
+                  className="shrink-0 rounded-lg px-3 py-1.5 font-label-md text-label-md font-semibold text-primary hover:bg-amber-100"
+                  onClick={() => {
+                    setActiveFilter('pending');
+                    setSelectedId(pendingAlert.id);
+                    setDetailsId(pendingAlert.id);
+                  }}
+                  type="button"
+                >
+                  Review
+                </button>
               </div>
-              {selectedApplication.status === 'pending' ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-2 font-label-md text-label-md text-error shadow-sm ring-1 ring-error/30 transition-colors hover:bg-error-container disabled:opacity-50"
-                    onClick={() => {
-                      setReviewError('');
-                      setIsRejectModalOpen(true);
-                    }}
-                    disabled={isUpdating}
-                    type="button"
-                  >
-                    <Icon className="text-[18px]">close</Icon>
-                    Reject
-                  </button>
-                  <button
-                    className="flex items-center gap-2 rounded-lg bg-tertiary-container px-4 py-2 font-label-md text-label-md text-on-tertiary shadow-md transition-all hover:bg-tertiary hover:shadow-lg active:scale-[0.98] disabled:opacity-50"
-                    onClick={() => updateApplicationStatus('approved')}
-                    disabled={isUpdating}
-                    type="button"
-                  >
-                    <Icon className="text-[20px]">task_alt</Icon>
-                    Approve application
-                  </button>
-                </div>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-3 py-1.5 font-label-md text-label-md font-semibold capitalize text-secondary">
-                  <Icon className="text-[18px]">
-                    {selectedApplication.status === 'approved' ? 'verified' : 'cancel'}
-                  </Icon>
-                  {selectedApplication.status}
+            </div>
+            {pendingCount > 1 && (
+              <div className="flex shrink-0 flex-col items-center">
+                <button
+                  aria-label="Show previous pending application"
+                  className="rounded p-1 text-amber-800 hover:bg-amber-100"
+                  onClick={() => rotatePendingAlert(-1)}
+                  type="button"
+                >
+                  <Icon className="text-[18px]">keyboard_arrow_up</Icon>
+                </button>
+                <span className="font-code text-code text-amber-900">
+                  {activePendingAlertIndex + 1}/{pendingCount}
                 </span>
-              )}
-            </section>
-          )}
+                <button
+                  aria-label="Show next pending application"
+                  className="rounded p-1 text-amber-800 hover:bg-amber-100"
+                  onClick={() => rotatePendingAlert(1)}
+                  type="button"
+                >
+                  <Icon className="text-[18px]">keyboard_arrow_down</Icon>
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
+        <div className="flex flex-col gap-space-md pt-space-md">
           <section className="flex flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm">
             <div className="flex flex-col justify-between gap-space-md p-space-md md:flex-row md:items-center">
               <div className="flex flex-wrap items-center gap-1">
@@ -398,7 +380,6 @@ export default function Admin({ applications: submittedApplications = [], chatbo
                   { id: 'all', label: 'All applications', count: applications.length },
                   { id: 'approved', label: 'Approved', count: approvedCount },
                   { id: 'rejected', label: 'Rejected', count: rejectedCount },
-                  { id: 'high-turnout', label: 'High turnout', count: null },
                 ].map((filter) => (
                   <button
                     aria-pressed={activeFilter === filter.id}
@@ -411,7 +392,7 @@ export default function Admin({ applications: submittedApplications = [], chatbo
                     onClick={() => setActiveFilter(filter.id)}
                     type="button"
                   >
-                    {filter.label}{filter.count !== null ? ` (${filter.count})` : ' (>200)'}
+                    {filter.label} ({filter.count})
                   </button>
                 ))}
               </div>
@@ -431,14 +412,14 @@ export default function Admin({ applications: submittedApplications = [], chatbo
             <div className="flex items-center justify-between px-space-lg pb-space-md">
               <div>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface">Submitted Activity Applications</h2>
-                <p className="font-body-sm text-body-sm text-secondary">Select a row to review the application and its proposal.</p>
+                <p className="font-body-sm text-body-sm text-secondary">Select a row to review the application and its paperwork.</p>
               </div>
               <span className="font-code text-code text-secondary">{visibleApplications.length} records</span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="application-table-scroll max-h-[28rem] overflow-auto">
               <table className="w-full text-left">
-                <thead className="bg-surface-container-low font-label-sm text-label-sm uppercase tracking-wider text-secondary">
+                <thead className="sticky top-0 z-10 bg-surface-container-low font-label-sm text-label-sm uppercase tracking-wider text-secondary">
                   <tr>
                     <th className="px-space-lg py-3">Activity &amp; Organization</th>
                     <th className="px-space-md py-3">Schedule &amp; Venue</th>
@@ -467,13 +448,13 @@ export default function Admin({ applications: submittedApplications = [], chatbo
                       <td className="px-space-md py-4">
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-semibold ${
                           application.status === 'pending'
-                            ? 'bg-primary-fixed text-primary'
+                            ? 'bg-amber-100 text-amber-800'
                             : application.status === 'approved'
                               ? 'bg-tertiary-fixed text-tertiary'
                               : 'bg-error-container text-error'
                         }`}>
                           <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                          {application.status === 'pending' ? 'Pending Review' : `${application.status[0].toUpperCase()}${application.status.slice(1)}`}
+                          {application.status === 'pending' ? 'Pending' : `${application.status[0].toUpperCase()}${application.status.slice(1)}`}
                         </span>
                       </td>
                       <td className="px-space-lg py-4">
@@ -489,19 +470,6 @@ export default function Admin({ applications: submittedApplications = [], chatbo
                             type="button"
                           >
                             <Icon className="text-[18px]">visibility</Icon>
-                          </button>
-                          <button
-                            aria-label={`View attached document for ${application.title}`}
-                            className="rounded-lg bg-primary p-2 text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={!application.has_proposal_document}
-                            onClick={() => {
-                              setSelectedId(application.id);
-                              setDocumentId(application.id);
-                            }}
-                            title={application.has_proposal_document ? 'View attached proposal PDF' : 'No document attached'}
-                            type="button"
-                          >
-                            <Icon className="text-[18px]">picture_as_pdf</Icon>
                           </button>
                         </div>
                       </td>
@@ -555,28 +523,65 @@ export default function Admin({ applications: submittedApplications = [], chatbo
               </button>
             </header>
 
-            <div className="grid gap-space-md p-space-lg sm:grid-cols-2">
+            <div className="space-y-space-md p-space-lg">
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-label-sm text-label-sm font-semibold ${
+                detailsApplication.status === 'pending'
+                  ? 'bg-amber-100 text-amber-800'
+                  : detailsApplication.status === 'approved'
+                    ? 'bg-tertiary-fixed text-tertiary'
+                    : detailsApplication.status === 'rejected'
+                      ? 'bg-error-container text-error'
+                      : 'bg-surface-container text-secondary'
+              }`}>
+                <span className="h-2 w-2 rounded-full bg-current" />
+                {detailsApplication.status === 'pending' ? 'Pending' : `${detailsApplication.status[0].toUpperCase()}${detailsApplication.status.slice(1)}`}
+              </span>
+              <div className="grid gap-space-md sm:grid-cols-2">
               {[
-                ['Status', detailsApplication.status === 'pending' ? 'Pending Review' : detailsApplication.status],
                 ['Submitted', detailsApplication.submitted],
+                ['Director name', detailsApplication.directorName],
+                ['Semester', detailsApplication.semester ? `Semester ${detailsApplication.semester}` : 'Not provided'],
+                ['Sesi', detailsApplication.academic_year || 'Not provided'],
                 ['Start', formatDate(detailsApplication.start_at, { dateStyle: 'medium', timeStyle: 'short' })],
                 ['End', formatDate(detailsApplication.end_at, { dateStyle: 'medium', timeStyle: 'short' })],
-                ['Venue', detailsApplication.venue || 'Not provided'],
-                ['Expected turnout', detailsApplication.turnout ? `${detailsApplication.turnout} people` : 'Not provided'],
-                ['Committee quota', detailsApplication.committeeQuota ?? 'Not provided'],
-                ['Participant quota', detailsApplication.participantQuota ?? 'Not provided'],
-                ['Merit tier', detailsApplication.meritTier],
               ].map(([label, value]) => (
-                <div className="rounded-lg bg-surface-container-low p-space-md" key={label}>
+                <div className="min-w-0 rounded-lg bg-surface-container-low p-space-md" key={label}>
                   <p className="font-label-sm text-label-sm text-secondary">{label}</p>
                   <p className="mt-0.5 font-body-md text-body-md font-semibold text-on-surface">{value}</p>
                 </div>
               ))}
-              <div className="rounded-lg bg-surface-container-low p-space-md sm:col-span-2">
-                <p className="font-label-sm text-label-sm text-secondary">Additional merit notes</p>
-                <p className="mt-0.5 whitespace-pre-wrap font-body-md text-body-md text-on-surface">
-                  {detailsApplication.merit_notes || 'No additional notes provided.'}
+              <div className="min-w-0 rounded-lg bg-surface-container-low p-space-md sm:col-span-2">
+                <p className="font-label-sm text-label-sm text-secondary">Venue</p>
+                <p className="mt-1 break-words whitespace-pre-wrap font-body-md text-body-md font-semibold text-on-surface">
+                  {detailsApplication.venue || 'Not provided'}
                 </p>
+              </div>
+              <div className="min-w-0 rounded-lg bg-surface-container-low p-space-md sm:col-span-2">
+                <p className="font-label-sm text-label-sm text-secondary">Remarks</p>
+                <p className="mt-1 break-words whitespace-pre-wrap font-body-md text-body-md text-on-surface">
+                  {detailsApplication.remarks || 'No remarks provided.'}
+                </p>
+              </div>
+              <div className="min-w-0 rounded-lg bg-surface-container-low p-space-md sm:col-span-2">
+                <p className="font-label-sm text-label-sm font-semibold text-on-surface">Uploaded paperwork</p>
+                {detailsApplication.paperwork_files?.length ? (
+                  <ul className="mt-2 space-y-2">
+                    {detailsApplication.paperwork_files.map((file) => (
+                      <li key={file.url}>
+                        <a
+                          className="inline-flex items-center gap-2 font-body-md text-body-md text-primary underline"
+                          href={file.url}
+                          download
+                        >
+                          <Icon className="text-[18px]">download</Icon>
+                          {file.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 font-body-md text-body-md text-secondary">No paperwork files uploaded.</p>
+                )}
               </div>
               {detailsApplication.review_notes && (
                 <div className="rounded-lg bg-error-container p-space-md sm:col-span-2">
@@ -586,29 +591,32 @@ export default function Admin({ applications: submittedApplications = [], chatbo
                   </p>
                 </div>
               )}
+              </div>
             </div>
 
-            <footer className="flex flex-col justify-between gap-space-sm border-t border-surface-container bg-surface-container-low p-space-lg sm:flex-row sm:items-center">
+            <footer className="flex items-center justify-between gap-space-sm border-t border-surface-container bg-surface-container-low p-space-lg">
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!detailsApplication.has_proposal_document}
-                onClick={() => {
-                  setDocumentId(detailsApplication.id);
-                  setDetailsId(null);
-                }}
+                className="rounded-lg px-4 py-2 font-label-md text-label-md text-secondary hover:bg-surface-container"
+                onClick={() => setDetailsId(null)}
                 type="button"
               >
-                <Icon className="text-[18px]">picture_as_pdf</Icon>
-                {detailsApplication.has_proposal_document ? 'View attached document' : 'No document attached'}
+                Close
               </button>
               <div className="flex justify-end gap-2">
-                <button
-                  className="rounded-lg px-4 py-2 font-label-md text-label-md text-secondary hover:bg-surface-container"
-                  onClick={() => setDetailsId(null)}
-                  type="button"
-                >
-                  Close
-                </button>
+                {detailsApplication.status === 'rejected' && (
+                  <button
+                    className="inline-flex items-center gap-2 rounded-lg bg-error px-4 py-2 font-label-md text-label-md text-on-error"
+                    onClick={() => {
+                      setDeleteError('');
+                      setDetailsId(null);
+                      setDeleteId(detailsApplication.id);
+                    }}
+                    type="button"
+                  >
+                    <Icon className="text-[18px]">delete</Icon>
+                    Delete application
+                  </button>
+                )}
                 {detailsApplication.status === 'pending' && (
                   <>
                     <button
@@ -640,49 +648,60 @@ export default function Admin({ applications: submittedApplications = [], chatbo
         </div>
       )}
 
-      {documentApplication && (
+      {deleteApplication && (
         <div
-          aria-labelledby="application-document-title"
+          aria-labelledby="delete-application-title"
           aria-modal="true"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/70 p-space-md backdrop-blur-sm"
-          onClick={() => setDocumentId(null)}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-on-surface/60 p-space-md backdrop-blur-sm"
+          onClick={() => !isDeleting && setDeleteId(null)}
           role="dialog"
         >
           <section
-            className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="flex items-center justify-between gap-space-md border-b border-surface-container p-space-md">
-              <div className="flex min-w-0 items-center gap-2">
-                <Icon className="text-primary">picture_as_pdf</Icon>
-                <h2 className="truncate font-headline-sm text-headline-sm font-bold text-on-surface" id="application-document-title">
-                  {documentApplication.title} — attached proposal
+            <header className="flex items-start gap-space-md border-b border-surface-container p-space-lg">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error-container text-error">
+                <Icon>delete</Icon>
+              </span>
+              <div>
+                <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface" id="delete-application-title">
+                  Move application to deleted items?
                 </h2>
+                <p className="mt-1 font-body-sm text-body-sm text-secondary">
+                  {deleteApplication.title} will be hidden from the review list. Its record and uploaded paperwork will be retained.
+                </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <a
-                  className="rounded-lg bg-surface-container-high px-3 py-2 font-label-sm text-label-sm text-on-surface hover:bg-surface-variant"
-                  href={`/admin/activity-applications/${documentApplication.id}/document`}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Open in new tab
-                </a>
-                <button
-                  aria-label="Close attached document"
-                  className="rounded-lg p-2 text-secondary hover:bg-surface-container"
-                  onClick={() => setDocumentId(null)}
-                  type="button"
-                >
-                  <Icon>close</Icon>
-                </button>
-              </div>
+              <button
+                aria-label="Close delete confirmation"
+                className="ml-auto rounded-lg p-1 text-secondary hover:bg-surface-container"
+                disabled={isDeleting}
+                onClick={() => setDeleteId(null)}
+                type="button"
+              >
+                <Icon className="text-[18px]">close</Icon>
+              </button>
             </header>
-            <iframe
-              className="min-h-0 flex-1 bg-surface-container"
-              src={`/admin/activity-applications/${documentApplication.id}/document`}
-              title={`Attached proposal for ${documentApplication.title}`}
-            />
+            {deleteError && <p className="px-space-lg pt-space-md font-body-sm text-body-sm text-error" role="alert">{deleteError}</p>}
+            <footer className="flex justify-end gap-2 bg-surface-container-low px-space-lg py-space-md">
+              <button
+                className="rounded-lg px-4 py-2 font-label-md text-label-md text-secondary hover:bg-surface-container disabled:opacity-50"
+                disabled={isDeleting}
+                onClick={() => setDeleteId(null)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-lg bg-error px-4 py-2 font-label-md text-label-md text-on-error disabled:opacity-50"
+                disabled={isDeleting}
+                onClick={deleteSelectedApplication}
+                type="button"
+              >
+                <Icon className="text-[18px]">{isDeleting ? 'progress_activity' : 'delete'}</Icon>
+                {isDeleting ? 'Moving...' : 'Move to deleted items'}
+              </button>
+            </footer>
           </section>
         </div>
       )}

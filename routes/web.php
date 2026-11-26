@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityApplicationController;
 use App\Http\Controllers\ChatbotInfoController;
+use App\Http\Controllers\Admin\StudentParticipationUploadController;
 use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
@@ -21,15 +22,16 @@ use App\Http\Controllers\BusScheduleController;
 // =====================================================
 
 Route::get('/', function (Request $request) {
-    return Inertia::render('Staff', [
+    return Inertia::render('ActivityApplication', [
         'applications' => ActivityApplication::query()
-            ->when(
-                $request->user(),
-                fn ($query, $user) =>
-                    $query->where('felo_id', $user->getAuthIdentifier())
-            )
+            ->when($request->user(), fn ($query, $user) => $query->where('felo_id', $user->getAuthIdentifier()))
+            ->withCount('paperworkDocuments')
             ->latest()
-            ->get(),
+            ->get()
+            ->each(fn (ActivityApplication $application) => $application->setAttribute(
+                'paperwork_document_count',
+                $application->paperwork_documents_count + ($application->proposal_document_path ? 1 : 0),
+            )),
     ]);
 })->name('staff');
 
@@ -57,6 +59,42 @@ Route::get(
 // =====================================================
 // ADMIN DASHBOARD
 // =====================================================
+
+Route::patch('/activity-applications/{application}', [ActivityApplicationController::class, 'update'])
+    ->name('activity-applications.update');
+Route::get('/activity-applications/{application}/students', [ActivityApplicationController::class, 'students'])
+    ->name('activity-applications.students');
+Route::get('/activity-applications/{application}/students/csv', [ActivityApplicationController::class, 'studentsCsv'])
+    ->name('activity-applications.students.csv');
+
+Route::get('/admin/students/upload', [StudentParticipationUploadController::class, 'create'])
+    ->name('admin.students.upload.create');
+Route::post('/admin/students/upload/preview', [StudentParticipationUploadController::class, 'preview'])
+    ->name('admin.students.upload.preview');
+Route::post('/admin/students/upload', [StudentParticipationUploadController::class, 'store'])
+    ->name('admin.students.upload.store');
+Route::get('/admin/students/upload/rules', [StudentParticipationUploadController::class, 'rules'])
+    ->name('admin.students.upload.rules');
+Route::patch('/admin/students/{participation}', [StudentParticipationUploadController::class, 'update'])
+    ->name('admin.students.update');
+
+Route::patch('/activity-applications/{application}', [ActivityApplicationController::class, 'update'])
+    ->name('activity-applications.update');
+Route::get('/activity-applications/{application}/students', [ActivityApplicationController::class, 'students'])
+    ->name('activity-applications.students');
+Route::get('/activity-applications/{application}/students/csv', [ActivityApplicationController::class, 'studentsCsv'])
+    ->name('activity-applications.students.csv');
+
+Route::get('/admin/students/upload', [StudentParticipationUploadController::class, 'create'])
+    ->name('admin.students.upload.create');
+Route::post('/admin/students/upload/preview', [StudentParticipationUploadController::class, 'preview'])
+    ->name('admin.students.upload.preview');
+Route::post('/admin/students/upload', [StudentParticipationUploadController::class, 'store'])
+    ->name('admin.students.upload.store');
+Route::get('/admin/students/upload/rules', [StudentParticipationUploadController::class, 'rules'])
+    ->name('admin.students.upload.rules');
+Route::patch('/admin/students/{participation}', [StudentParticipationUploadController::class, 'update'])
+    ->name('admin.students.update');
 
 Route::get('/admin', function () {
 
@@ -86,20 +124,30 @@ Route::get('/admin', function () {
         ->get();
 
     $applications = ActivityApplication::query()
-        ->whereIn('status', [
-            'pending',
-            'approved',
-            'rejected',
-        ])
+        ->whereIn('status', ['pending', 'approved', 'rejected'])
+        ->with('paperworkDocuments')
         ->latest()
         ->get()
-        ->each(
-            fn (ActivityApplication $application) =>
-                $application->setAttribute(
-                    'has_proposal_document',
-                    $application->proposal_document_path !== null
-                )
-        );
+        ->each(function (ActivityApplication $application) {
+            $files = $application->paperworkDocuments
+                ->map(fn ($document) => [
+                    'name' => $document->original_name,
+                    'url' => route('admin.activity-applications.document-file', [
+                        'application' => $application->id,
+                        'document' => $document->id,
+                    ]),
+                ]);
+
+            if ($application->proposal_document_path) {
+                $files->prepend([
+                    'name' => basename($application->proposal_document_path),
+                    'url' => route('admin.activity-applications.document', $application),
+                ]);
+            }
+
+            $application->setAttribute('paperwork_files', $files->values());
+            $application->setAttribute('has_proposal_document', $files->isNotEmpty());
+        });
 
     return Inertia::render('Admin', [
         'applications' => $applications,
@@ -107,10 +155,19 @@ Route::get('/admin', function () {
         'chatbotLogs' => $chatbotLogs,
         'showChatbot' => request()->query('modal') === 'chatbot',
         'successMessage' => session('success'),
+        'notificationWarning' => session('notificationWarning'),
     ]);
 
 })->name('admin');
 
+Route::patch('/admin/activity-applications/{application}', [ActivityApplicationController::class, 'review'])
+    ->name('admin.activity-applications.review');
+
+Route::delete('/admin/activity-applications/{application}', [ActivityApplicationController::class, 'adminDestroy'])
+    ->name('admin.activity-applications.destroy');
+
+Route::get('/admin/activity-applications/{application}/document', [ActivityApplicationController::class, 'document'])
+    ->name('admin.activity-applications.document');
 
 // =====================================================
 // PIC DIRECTORY MANAGEMENT

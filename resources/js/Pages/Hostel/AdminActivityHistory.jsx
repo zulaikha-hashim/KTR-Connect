@@ -2,38 +2,6 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import AppLayout from '../../Components/AppLayout';
 
-const navigation = [
-  {
-    title: 'Hostel Management',
-    items: [
-      {
-        label: 'Room Inventory',
-        icon: 'meeting_room',
-        path: 'admin-hostel-rooms',
-        href: '/admin/hostel/rooms',
-      },
-      {
-        label: 'Activity History',
-        icon: 'history',
-        path: 'admin-hostel-activity-history',
-        href: '/admin/hostel/activity-history',
-        active: true,
-      },
-    ],
-  },
-  {
-    title: 'Administration',
-    items: [
-      {
-        label: 'Activity Review & Approvals',
-        icon: 'fact_check',
-        path: 'activity-reviews-and-approvals',
-        href: '/admin',
-      },
-    ],
-  },
-];
-
 const profile = {
   name: 'Admin Interface Preview',
   description: 'Local development',
@@ -124,7 +92,6 @@ export default function AdminActivityHistory({
 
   return (
     <AppLayout
-      navigationSections={navigation}
       profile={profile}
       sessionLabel={
         selectedSession

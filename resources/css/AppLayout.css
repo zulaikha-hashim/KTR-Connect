@@ -18,3 +18,41 @@
 .app-layout ::-webkit-scrollbar {
     display: none;
 }
+
+.app-layout .application-table-scroll {
+    scrollbar-color: #9ca3af #f3f4f6;
+    scrollbar-width: thin;
+}
+
+.app-layout .application-table-scroll::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+    height: 8px;
+}
+
+.app-layout .application-table-scroll::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 9999px;
+}
+
+@keyframes pending-alert-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pending-alert-slide-up {
+    animation: pending-alert-slide-up 400ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pending-alert-slide-up {
+        animation: none;
+    }
+}

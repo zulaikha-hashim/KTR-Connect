@@ -25,16 +25,16 @@ const sharedNavigation = [
     title: 'Felo & Staff Operations',
     items: [
       {
-        label: 'Manage Activities',
+        label: 'Manage Activities & Paperwork',
         icon: 'post_add',
         path: 'manage-activities-and-proposals',
         href: '/',
       },
       {
-        label: 'Record Participation (CSV/Excel)',
+        label: 'Upload Student Data (CSV)',
         icon: 'upload_file',
-        path: 'record-participation-upload',
-        href: '#',
+        path: 'upload-student-data',
+        href: '/admin/students/upload',
       },
       {
         label: 'Merit Status Reports',
@@ -48,10 +48,28 @@ const sharedNavigation = [
     title: 'Collegiate Administration',
     items: [
       {
+        label: 'Admin Analytics Dashboard',
+        icon: 'dashboard',
+        path: 'collegiate-admin-dashboard',
+        href: '#',
+      },
+      {
         label: 'Activity Review & Approvals',
         icon: 'fact_check',
         path: 'activity-reviews-and-approvals',
         href: '/admin',
+      },
+      {
+        label: 'Update Chatbot Information',
+        icon: 'smart_toy',
+        path: 'update-chatbot-information',
+        href: '/admin?modal=chatbot',
+      },
+      {
+        label: 'Support & External Links',
+        icon: 'link',
+        path: 'admin-support',
+        href: '/admin/support',
       },
     ],
   },
@@ -74,45 +92,8 @@ const sharedNavigation = [
   },
 ];
 
-function mergeNavigation(pageSections) {
-  const merged = [];
-  const existingItems = new Map();
-
-  for (const section of [...sharedNavigation, ...pageSections]) {
-    let group = merged.find(
-      (item) => item.title === section.title
-    );
-
-    if (!group) {
-      group = {
-        title: section.title,
-        items: [],
-      };
-
-      merged.push(group);
-    }
-
-    for (const item of section.items) {
-      const key = item.path || item.label;
-
-      if (existingItems.has(key)) {
-        // Keep page-specific link details without duplicating the item.
-        Object.assign(existingItems.get(key), item);
-      } else {
-        const copy = { ...item };
-
-        group.items.push(copy);
-        existingItems.set(key, copy);
-      }
-    }
-  }
-
-  return merged.filter((section) => section.items.length > 0);
-}
-
 export default function AppLayout({
   children,
-  navigationSections = [],
   profile,
   sessionLabel,
 }) {
@@ -148,15 +129,22 @@ export default function AppLayout({
     <div className="app-layout bg-background font-body-md text-on-surface antialiased">
       <AppSidebar sections={sections} />
 
-      <div className="pl-72">
+      <div className="flex min-h-screen flex-col pl-72">
         <AppTopbar
           sessionLabel={sessionLabel}
           profile={profile}
         />
 
-        <main className="relative pt-16 w-full px-gutter bg-background min-h-screen">
+        <main className="relative w-full flex-1 bg-background px-gutter pt-16">
           {children}
         </main>
+
+        <footer className="border-t border-surface-container bg-surface-container-lowest px-gutter py-space-md">
+          <div className="flex flex-col items-center justify-between gap-space-xs font-body-sm text-body-sm text-secondary sm:flex-row">
+            <p>© {new Date().getFullYear()} Kolej Tun Razak, Universiti Teknologi Malaysia.</p>
+            <p>UTM Skudai Campus</p>
+          </div>
+        </footer>
       </div>
     </div>
   );
