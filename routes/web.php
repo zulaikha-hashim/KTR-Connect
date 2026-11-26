@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\Hostel\HostelInventoryController;
 use App\Http\Controllers\Admin\Hostel\HostelAvailabilityController;
 use App\Http\Controllers\Admin\Hostel\HostelActivityHistoryController;
 use App\Http\Controllers\PicDirectoryController;
-
 use App\Models\ActivityApplication;
 use App\Models\ChatbotInfo;
 use App\Models\ChatbotInfoLog;
@@ -16,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\BusScheduleController;
+use App\Http\Controllers\StudentParticipationController;
 
 // =====================================================
 // STAFF HOMEPAGE
@@ -245,8 +245,88 @@ Route::post(
      [HostelAvailabilityController::class, 'store']
  )->name('admin.hostel.beds.restrictions.store');
 
+
+ // =====================================================
+ // HOSTEL BED RESTRICTIONS
+ // =====================================================
+
  // Restore Bed Restrictions
  Route::patch(
      '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
      [HostelAvailabilityController::class, 'restore']
  )->name('admin.hostel.beds.restrictions.restore');
+
+
+ // =====================================================
+ // STUDENT PARTICIPATION RECORDS
+ // =====================================================
+
+ Route::get(
+     '/staff/participation-records',
+     [StudentParticipationController::class, 'index']
+ )->name('staff.participation.index');
+
+ Route::post(
+     '/staff/participation-records/import/{type}',
+     [StudentParticipationController::class, 'import']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.import');
+
+ Route::patch(
+     '/staff/participation-records/{type}/{record}',
+     [StudentParticipationController::class, 'update']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.update');
+
+ // Delete an individual record
+ Route::delete(
+     '/staff/participation-records/{type}/{record}',
+     [StudentParticipationController::class, 'destroy']
+ )->whereIn('type', ['participation', 'committee'])
+  ->whereNumber('record')
+  ->name('staff.participation.destroy');
+
+ // Delete all records for a selected category
+ Route::delete(
+     '/staff/participation-records/{type}',
+     [StudentParticipationController::class, 'destroyAll']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.destroy-all');
+
+ // Delete records from one uploaded file
+ Route::delete(
+     '/staff/participation-records/uploads/{batch}',
+     [StudentParticipationController::class, 'destroyBatch']
+ )->whereNumber('batch')
+  ->name('staff.participation.uploads.destroy');
+
+
+ // =====================================================
+ // MERIT TYPE MANAGEMENT
+ // =====================================================
+
+ Route::prefix('admin/master-data/merit')
+     ->name('admin.master-data.merit.')
+     ->group(function () {
+
+         Route::get(
+             '/',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'index']
+         )->name('index');
+
+         Route::post(
+             '/',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'store']
+         )->name('store');
+
+         Route::put(
+             '/{meritType}',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'update']
+         )->name('update');
+
+         Route::delete(
+             '/{meritType}',
+             [\App\Http\Controllers\Admin\MeritTypeController::class, 'destroy']
+         )->name('destroy');
+     });
+

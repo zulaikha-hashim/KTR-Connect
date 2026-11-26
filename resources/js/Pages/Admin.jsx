@@ -3,6 +3,110 @@ import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../Components/AppLayout';
 import Chatbot from './Chatbot';
 
+const adminNavigation = [
+  {
+    title: 'Hostel Management',
+    items: [
+      {
+        label: 'Room Inventory',
+        icon: 'meeting_room',
+        path: 'admin-hostel-rooms',
+        href: '/admin/hostel/rooms',
+      },
+    ],
+  },
+  {
+    title: 'Student Resident',
+    items: [
+      {
+        label: 'Merit & Room Eligibility',
+        icon: 'verified',
+        path: 'student-merit-and-room-eligibility',
+        href: '#',
+      },
+      {
+        label: 'Activity Directory & Details',
+        icon: 'event_available',
+        path: 'student-activity-directory',
+        href: '#',
+      },
+    ],
+  },
+  {
+    title: 'Felo & Staff Operations',
+    items: [
+      {
+        label: 'Manage Activities & Proposal',
+        icon: 'post_add',
+        path: 'manage-activities-and-proposals',
+        href: '/',
+      },
+      {
+        label: 'Record Participation (CSV/Excel)',
+        icon: 'upload_file',
+        path: 'record-participation-upload',
+        href: '#',
+      },
+      {
+        label: 'Merit Status Reports',
+        icon: 'summarize',
+        path: 'staff-merit-analytics-reports',
+        href: '#',
+      },
+    ],
+  },
+  {
+    title: 'Collegiate Administration',
+    items: [
+      {
+        label: 'Admin Analytics Dashboard',
+        icon: 'dashboard',
+        path: 'collegiate-admin-dashboard',
+        href: '/admin',
+      },
+      {
+        label: 'Activity Review & Approvals',
+        icon: 'fact_check',
+        path: 'activity-reviews-and-approvals',
+        href: '/admin',
+        active: true,
+      },
+      {
+        label: 'Update Chatbot Information',
+        icon: 'smart_toy',
+        path: 'update-chatbot-information',
+        href: '/admin?modal=chatbot',
+      },
+      {
+        label: 'Support & External Links',
+        icon: 'link',
+        path: 'admin-support',
+        href: '/admin/support',
+      },
+    ],
+  },
+  {
+    title: 'Master Data Management',
+    items: [
+      {
+        label: 'Roles Management',
+        icon: 'badge',
+        href: '#',
+      },
+      {
+        label: 'Status Management',
+        icon: 'toggle_on',
+        href: '#',
+      },
+      {
+        label: 'Merit Management',
+        icon: 'military_tech',
+        href: '/admin/master-data/merit',
+      },
+    ],
+  },
+];
+
 const adminProfile = {
   name: 'Admin Name',
   description: 'Administrator',
