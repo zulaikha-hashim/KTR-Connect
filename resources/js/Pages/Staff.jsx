@@ -21,7 +21,26 @@ const staffNavigation = [
   {
     title: 'Collegiate Administration',
     items: [
-      { label: 'Activity Review & Approvals', icon: 'fact_check', path: 'activity-reviews-and-approvals', href: '/admin' },
+      {
+      label: 'Activity Review & Approvals',
+      icon: 'fact_check',
+      path: 'activity-reviews-and-approvals',
+      href: '/admin',
+      },
+      {
+        label: 'PIC Directory Management',
+        icon: 'contacts',
+        path: 'pic-directory-management',
+        href: '/admin/pic-directory',
+        active: false,
+      },
+      {
+      label: 'Upload / Update Bus Schedule',
+      icon: 'upload_file',
+      path: 'bus-schedule',
+      href: '/admin/bus-schedule',
+    },
+
     ],
   },
   {

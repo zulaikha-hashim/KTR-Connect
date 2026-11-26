@@ -19,6 +19,12 @@ const navigationSections = [
         path: 'activity-reviews-and-approvals',
         href: '/admin',
       },
+      {
+        label: 'Upload / Update Bus Schedule',
+        icon: 'upload_file',
+        path: 'bus-schedule',
+        href: '/admin/bus-schedule',
+      },
     ],
   },
 ];
