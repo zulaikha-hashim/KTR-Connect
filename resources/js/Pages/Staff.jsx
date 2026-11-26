@@ -14,7 +14,12 @@ const staffNavigation = [
     title: 'Felo & Staff Operations',
     items: [
       { label: 'Manage Activities', icon: 'post_add', path: 'manage-activities-and-proposals', href: '/', active: true },
-      { label: 'Record Participation (CSV/Excel)', icon: 'upload_file', path: 'record-participation-upload', href: '#' },
+      {
+        label: 'Record Participation (CSV/Excel)',
+        icon: 'table_view',
+        path: 'participation-records',
+        href: '/staff/participation-records',
+      },
       { label: 'Merit Status Reports', icon: 'summarize', path: 'staff-merit-analytics-reports', href: '#' },
     ],
   },

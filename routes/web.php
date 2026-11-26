@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\BusScheduleController;
+use App\Http\Controllers\StudentParticipationController;
 
 // =====================================================
 // STAFF HOMEPAGE
@@ -229,3 +230,47 @@ Route::post(
      '/admin/hostel/beds/{bed}/restrictions/{restriction}/restore',
      [HostelAvailabilityController::class, 'restore']
  )->name('admin.hostel.beds.restrictions.restore');
+
+
+ // =====================================================
+ // STUDENT PARTICIPATION RECORDS
+ // =====================================================
+
+ Route::get(
+     '/staff/participation-records',
+     [StudentParticipationController::class, 'index']
+ )->name('staff.participation.index');
+
+ Route::post(
+     '/staff/participation-records/import/{type}',
+     [StudentParticipationController::class, 'import']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.import');
+
+ Route::patch(
+     '/staff/participation-records/{type}/{record}',
+     [StudentParticipationController::class, 'update']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.update');
+
+
+ // Delete one participation or committee record
+ Route::delete(
+     '/staff/participation-records/{type}/{record}',
+     [StudentParticipationController::class, 'destroy']
+ )->whereIn('type', ['participation', 'committee'])
+  ->whereNumber('record')
+  ->name('staff.participation.destroy');
+
+ // Delete all participation or committee records
+ Route::delete(
+     '/staff/participation-records/{type}',
+     [StudentParticipationController::class, 'destroyAll']
+ )->whereIn('type', ['participation', 'committee'])
+  ->name('staff.participation.destroy-all');
+
+Route::delete(
+    '/staff/participation-records/uploads/{batch}',
+    [StudentParticipationController::class, 'destroyBatch']
+)->whereNumber('batch')
+ ->name('staff.participation.uploads.destroy');
